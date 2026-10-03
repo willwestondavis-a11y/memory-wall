@@ -2114,7 +2114,7 @@ start();
     });
 </script>
 
-      <script>
+<script>
   // =========================
   // MEMORY WALL ACCOUNT SYSTEM
   // =========================
@@ -2122,71 +2122,177 @@ start();
   const accountBox = document.createElement("div");
 
   accountBox.innerHTML = `
-    <div style="
+    <div id="accountContainer" style="
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 25px;
+      left: 55%;
+      transform: translateX(-50%);
       z-index: 99999;
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-      width: 280px;
       font-family: Arial, sans-serif;
     ">
-      <h2 style="margin-top:0;">Memory Wall</h2>
 
-      <input
-        id="accountEmail"
-        type="email"
-        placeholder="Email"
-        style="width:100%; padding:10px; margin-bottom:8px; box-sizing:border-box;"
-      >
-
-      <input
-        id="accountPassword"
-        type="password"
-        placeholder="Password"
-        style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"
-      >
-
-      <button
-        id="signUpButton"
-        style="width:100%; padding:10px; margin-bottom:6px;"
-      >
-        Create account
-      </button>
-
-      <button
-        id="signInButton"
-        style="width:100%; padding:10px;"
-      >
+      <button id="accountToggle" style="
+        background: white;
+        border: none;
+        border-radius: 30px;
+        padding: 12px 22px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.18);
+        transition: all 0.25s ease;
+      ">
         Sign in
       </button>
 
-      <p id="accountMessage" style="font-size:14px;"></p>
+      <div id="accountPanel" style="
+        width: 280px;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        margin-top: 10px;
+        background: white;
+        border-radius: 18px;
+        padding: 0 20px;
+        box-sizing: border-box;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        transition:
+          max-height 0.45s ease,
+          opacity 0.3s ease,
+          padding 0.45s ease;
+      ">
+
+        <h2 style="margin: 20px 0 15px;">
+          Memory Wall
+        </h2>
+
+        <input
+          id="accountEmail"
+          type="email"
+          placeholder="Email"
+          style="
+            width:100%;
+            padding:10px;
+            margin-bottom:8px;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+          "
+        >
+
+        <input
+          id="accountPassword"
+          type="password"
+          placeholder="Password"
+          style="
+            width:100%;
+            padding:10px;
+            margin-bottom:10px;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+          "
+        >
+
+        <button
+          id="signUpButton"
+          style="
+            width:100%;
+            padding:10px;
+            margin-bottom:6px;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+          "
+        >
+          Create account
+        </button>
+
+        <button
+          id="signInButton"
+          style="
+            width:100%;
+            padding:10px;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+          "
+        >
+          Sign in
+        </button>
+
+        <p
+          id="accountMessage"
+          style="
+            font-size:14px;
+            padding-bottom:15px;
+          "
+        ></p>
+
+      </div>
     </div>
   `;
 
   document.body.appendChild(accountBox);
 
 
+  // OPEN / CLOSE ACCOUNT BOX
+
+  const accountToggle =
+    document.getElementById("accountToggle");
+
+  const accountPanel =
+    document.getElementById("accountPanel");
+
+  let accountOpen = false;
+
+  accountToggle.onclick = () => {
+
+    accountOpen = !accountOpen;
+
+    if (accountOpen) {
+
+      accountPanel.style.maxHeight = "500px";
+      accountPanel.style.opacity = "1";
+      accountPanel.style.padding = "0 20px";
+
+      accountToggle.textContent = "Close";
+
+    } else {
+
+      accountPanel.style.maxHeight = "0";
+      accountPanel.style.opacity = "0";
+      accountPanel.style.padding = "0 20px";
+
+      accountToggle.textContent = "Sign in";
+    }
+  };
+
+
   // CREATE ACCOUNT
+
   document.getElementById("signUpButton").onclick = async () => {
 
-    const email = document.getElementById("accountEmail").value;
-    const password = document.getElementById("accountPassword").value;
-    const message = document.getElementById("accountMessage");
+    const email =
+      document.getElementById("accountEmail").value;
+
+    const password =
+      document.getElementById("accountPassword").value;
+
+    const message =
+      document.getElementById("accountMessage");
 
     if (!email || !password) {
-      message.textContent = "Enter an email and password.";
+      message.textContent =
+        "Enter an email and password.";
       return;
     }
 
-    const { data, error } = await supabaseClient.auth.signUp({
-      email: email,
-      password: password
-    });
+    const { data, error } =
+      await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
 
     if (error) {
       console.error(error);
@@ -2200,14 +2306,21 @@ start();
 
 
   // SIGN IN
+
   document.getElementById("signInButton").onclick = async () => {
 
-    const email = document.getElementById("accountEmail").value;
-    const password = document.getElementById("accountPassword").value;
-    const message = document.getElementById("accountMessage");
+    const email =
+      document.getElementById("accountEmail").value;
+
+    const password =
+      document.getElementById("accountPassword").value;
+
+    const message =
+      document.getElementById("accountMessage");
 
     if (!email || !password) {
-      message.textContent = "Enter an email and password.";
+      message.textContent =
+        "Enter an email and password.";
       return;
     }
 
@@ -2223,7 +2336,12 @@ start();
       return;
     }
 
-    message.textContent = "Signed in successfully!";
-    console.log("Signed-in user:", data.user);
+    message.textContent =
+      "Signed in successfully!";
+
+    console.log(
+      "Signed-in user:",
+      data.user
+    );
   };
 </script>

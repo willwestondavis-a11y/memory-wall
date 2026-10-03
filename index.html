@@ -2343,5 +2343,10 @@ start();
       "Signed-in user:",
       data.user
     );
-  };
+  };supabaseClient.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    document.getElementById("accountMessage").textContent =
+      "Already signed in!";
+  }
+});
 </script>

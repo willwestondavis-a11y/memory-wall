@@ -2113,3 +2113,117 @@ start();
       }
     });
 </script>
+
+      <script>
+  // =========================
+  // MEMORY WALL ACCOUNT SYSTEM
+  // =========================
+
+  const accountBox = document.createElement("div");
+
+  accountBox.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+      width: 280px;
+      font-family: Arial, sans-serif;
+    ">
+      <h2 style="margin-top:0;">Memory Wall</h2>
+
+      <input
+        id="accountEmail"
+        type="email"
+        placeholder="Email"
+        style="width:100%; padding:10px; margin-bottom:8px; box-sizing:border-box;"
+      >
+
+      <input
+        id="accountPassword"
+        type="password"
+        placeholder="Password"
+        style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"
+      >
+
+      <button
+        id="signUpButton"
+        style="width:100%; padding:10px; margin-bottom:6px;"
+      >
+        Create account
+      </button>
+
+      <button
+        id="signInButton"
+        style="width:100%; padding:10px;"
+      >
+        Sign in
+      </button>
+
+      <p id="accountMessage" style="font-size:14px;"></p>
+    </div>
+  `;
+
+  document.body.appendChild(accountBox);
+
+
+  // CREATE ACCOUNT
+  document.getElementById("signUpButton").onclick = async () => {
+
+    const email = document.getElementById("accountEmail").value;
+    const password = document.getElementById("accountPassword").value;
+    const message = document.getElementById("accountMessage");
+
+    if (!email || !password) {
+      message.textContent = "Enter an email and password.";
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email: email,
+      password: password
+    });
+
+    if (error) {
+      console.error(error);
+      message.textContent = error.message;
+      return;
+    }
+
+    message.textContent =
+      "Account created! Check your email if confirmation is required.";
+  };
+
+
+  // SIGN IN
+  document.getElementById("signInButton").onclick = async () => {
+
+    const email = document.getElementById("accountEmail").value;
+    const password = document.getElementById("accountPassword").value;
+    const message = document.getElementById("accountMessage");
+
+    if (!email || !password) {
+      message.textContent = "Enter an email and password.";
+      return;
+    }
+
+    const { data, error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+      console.error(error);
+      message.textContent = error.message;
+      return;
+    }
+
+    message.textContent = "Signed in successfully!";
+    console.log("Signed-in user:", data.user);
+  };
+</script>

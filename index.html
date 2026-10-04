@@ -744,6 +744,33 @@ button {
 .friendsEmpty strong { color:inherit; font-size:14px; }
 .friendsEmpty span { font-size:12px; }
 
+
+/* =========================
+   FRIENDS FUNCTIONAL UI
+========================= */
+.friendsStatus { margin-top:10px; min-height:18px; font-size:12px; color:#777; }
+.friendsStatus.error { color:#c62828; }
+.friendsStatus.success { color:#287a3d; }
+.friendAccountCard { margin-top:12px; padding:13px; border-radius:16px; background:rgba(0,0,0,.045); }
+.friendAccountCard strong { display:block; font-size:12px; }
+.friendUsernameRow { display:flex; gap:8px; margin-top:8px; }
+.friendUsernameRow input { flex:1; min-width:0; border:0; outline:0; border-radius:12px; padding:11px 12px; background:rgba(255,255,255,.72); color:inherit; font:inherit; }
+.friendPrimaryButton { border:0; border-radius:12px; padding:11px 14px; background:var(--memory-text); color:var(--wall-bg); font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+.friendPrimaryButton:disabled { opacity:.5; cursor:default; }
+.friendSection { margin-top:16px; }
+.friendSectionTitle { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px; font-weight:800; opacity:.7; text-transform:uppercase; letter-spacing:.4px; }
+.friendRows { display:flex; flex-direction:column; gap:7px; }
+.friendRow { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:14px; background:rgba(0,0,0,.045); }
+.friendAvatar { width:36px; height:36px; flex:0 0 36px; display:grid; place-items:center; border-radius:12px; background:var(--memory-text); color:var(--wall-bg); font-size:13px; font-weight:800; }
+.friendRowMain { flex:1; min-width:0; }
+.friendRowMain strong { display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.friendRowMain span { display:block; margin-top:2px; color:#888; font-size:10px; }
+.friendRowActions { display:flex; gap:5px; }
+.friendSmallButton { border:0; border-radius:10px; padding:8px 10px; background:rgba(0,0,0,.07); color:inherit; font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+.friendSmallButton.accept { background:var(--memory-text); color:var(--wall-bg); }
+.friendEmptySmall { padding:13px; border-radius:14px; background:rgba(0,0,0,.035); color:#888; font-size:11px; text-align:center; }
+.friendLoading { padding:22px 10px; text-align:center; color:#888; font-size:12px; }
+
 @media(max-width:700px) {
     /*
      * iPhone Dynamic Island / status-bar fix.
@@ -1338,18 +1365,29 @@ button {
     <div class="friendsHero">
         <div class="friendsIcon">♧</div>
         <div>
-            <strong>Share memories with friends</strong>
-            <p>Friends and sharing will be added later.</p>
+            <strong>Connect with friends</strong>
+            <p>Add people by username. Wall sharing stays separate for now.</p>
         </div>
     </div>
-    <div class="friendSearch fakeDisabled">
-        <span>⌕</span><input type="text" placeholder="Search for friends" disabled>
+
+    <div class="friendAccountCard" id="friendAccountCard">
+        <strong>Your username</strong>
+        <div class="friendUsernameRow">
+            <input id="friendUsernameInput" type="text" maxlength="20" autocomplete="off" placeholder="Choose a username">
+            <button class="friendPrimaryButton" type="button" id="saveFriendUsername">Save</button>
+        </div>
+        <div class="friendsStatus" id="friendAccountStatus">Connecting…</div>
     </div>
-    <button class="newWallButton friendAddButton" type="button" disabled>+ Add friend</button>
-    <div class="friendsEmpty">
-        <div class="friendsEmptyIcon">◎</div>
-        <strong>No friends yet</strong>
-        <span>When friends are ready, they'll appear here.</span>
+
+    <div class="friendSearch">
+        <span>⌕</span>
+        <input id="friendSearchInput" type="text" maxlength="20" autocomplete="off" placeholder="Search by username">
+    </div>
+    <button class="newWallButton friendAddButton" type="button" id="sendFriendRequest">+ Add friend</button>
+    <div class="friendsStatus" id="friendActionStatus"></div>
+
+    <div id="friendsContent">
+        <div class="friendLoading">Open Friends to load your connections.</div>
     </div>
 </section>
 
@@ -3014,4 +3052,357 @@ applyWallSettings();
         console.log("Supabase connected successfully!");
       }
     });
+</script>
+
+<script>
+/* =========================================================
+   FUNCTIONAL FRIENDS
+   Uses the existing Supabase profiles/friendships tables.
+   No wall sharing is implemented here.
+========================================================= */
+(function(){
+    const friendsSheetEl = document.getElementById("friendsSheet");
+    const usernameInput = document.getElementById("friendUsernameInput");
+    const saveUsernameBtn = document.getElementById("saveFriendUsername");
+    const accountStatus = document.getElementById("friendAccountStatus");
+    const searchInput = document.getElementById("friendSearchInput");
+    const sendRequestBtn = document.getElementById("sendFriendRequest");
+    const actionStatus = document.getElementById("friendActionStatus");
+    const friendsContent = document.getElementById("friendsContent");
+
+    let currentUser = null;
+    let currentProfile = null;
+    let friendsInitialized = false;
+
+    function setStatus(el, message, type=""){
+        if (!el) return;
+        el.textContent = message || "";
+        el.className = "friendsStatus" + (type ? " " + type : "");
+    }
+
+    function usernameLooksValid(value){
+        return /^[a-z0-9_]{3,20}$/.test(value);
+    }
+
+    function initials(name){
+        const s = (name || "?").trim();
+        return (s.slice(0,2) || "?").toUpperCase();
+    }
+
+    async function ensureFriendAuth(){
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        if (data.session && data.session.user) {
+            currentUser = data.session.user;
+            return currentUser;
+        }
+
+        const result = await supabaseClient.auth.signInAnonymously();
+        if (result.error) throw result.error;
+        currentUser = result.data.user;
+        if (!currentUser) throw new Error("Could not create a user session.");
+        return currentUser;
+    }
+
+    async function loadMyProfile(){
+        const { data, error } = await supabaseClient
+            .from("profiles")
+            .select("id, username")
+            .eq("id", currentUser.id)
+            .maybeSingle();
+        if (error) throw error;
+
+        if (!data) {
+            const { data: created, error: createError } = await supabaseClient
+                .from("profiles")
+                .insert({ id: currentUser.id })
+                .select("id, username")
+                .single();
+            if (createError) throw createError;
+            currentProfile = created;
+        } else {
+            currentProfile = data;
+        }
+
+        usernameInput.value = currentProfile.username || "";
+        usernameInput.disabled = false;
+        saveUsernameBtn.disabled = false;
+        setStatus(accountStatus, currentProfile.username ? "You are signed in on this device." : "Choose a username so friends can find you.");
+    }
+
+    async function saveUsername(){
+        const value = usernameInput.value.trim().toLowerCase();
+        if (!usernameLooksValid(value)) {
+            setStatus(accountStatus, "Use 3–20 letters, numbers, or underscores.", "error");
+            return;
+        }
+        saveUsernameBtn.disabled = true;
+        setStatus(accountStatus, "Saving…");
+        const { data, error } = await supabaseClient
+            .from("profiles")
+            .update({ username: value })
+            .eq("id", currentUser.id)
+            .select("id, username")
+            .single();
+        saveUsernameBtn.disabled = false;
+        if (error) {
+            const duplicate = error.code === "23505";
+            setStatus(accountStatus, duplicate ? "That username is already taken." : "Could not save your username.", "error");
+            return;
+        }
+        currentProfile = data;
+        setStatus(accountStatus, "Username saved. Friends can find you as @" + value + ".", "success");
+    }
+
+    async function getExistingFriendship(targetId){
+        const { data: first, error: firstError } = await supabaseClient
+            .from("friendships")
+            .select("id, requester_id, receiver_id, status")
+            .eq("requester_id", currentUser.id)
+            .eq("receiver_id", targetId)
+            .maybeSingle();
+        if (firstError) throw firstError;
+        if (first) return first;
+
+        const { data: second, error: secondError } = await supabaseClient
+            .from("friendships")
+            .select("id, requester_id, receiver_id, status")
+            .eq("requester_id", targetId)
+            .eq("receiver_id", currentUser.id)
+            .maybeSingle();
+        if (secondError) throw secondError;
+        return second || null;
+    }
+
+    async function sendFriendRequest(){
+        setStatus(actionStatus, "");
+        const username = searchInput.value.trim().toLowerCase();
+        if (!usernameLooksValid(username)) {
+            setStatus(actionStatus, "Enter a username with 3–20 letters, numbers, or underscores.", "error");
+            return;
+        }
+        if (!currentProfile || !currentProfile.username) {
+            setStatus(actionStatus, "Choose your username first.", "error");
+            usernameInput.focus();
+            return;
+        }
+
+        sendRequestBtn.disabled = true;
+        try {
+            const { data: matches, error: searchError } = await supabaseClient
+                .from("profiles")
+                .select("id, username")
+                .ilike("username", username)
+                .limit(5);
+            if (searchError) throw searchError;
+            const target = (matches || []).find(p => p.username && p.username.toLowerCase() === username);
+            if (!target) {
+                setStatus(actionStatus, "No user found with that username.", "error");
+                return;
+            }
+            if (target.id === currentUser.id) {
+                setStatus(actionStatus, "You cannot add yourself.", "error");
+                return;
+            }
+
+            const existing = await getExistingFriendship(target.id);
+            if (existing) {
+                if (existing.status === "accepted") setStatus(actionStatus, "You are already friends.", "success");
+                else if (existing.requester_id === currentUser.id) setStatus(actionStatus, "Friend request already sent.");
+                else setStatus(actionStatus, "That person already sent you a request. Check Incoming requests.");
+                await renderFriends();
+                return;
+            }
+
+            const { error: insertError } = await supabaseClient
+                .from("friendships")
+                .insert({ requester_id: currentUser.id, receiver_id: target.id, status: "pending" });
+            if (insertError) throw insertError;
+
+            searchInput.value = "";
+            setStatus(actionStatus, "Friend request sent to @" + target.username + ".", "success");
+            await renderFriends();
+        } catch (error) {
+            console.error("Friend request error:", error);
+            setStatus(actionStatus, "Could not send the request. Try again.", "error");
+        } finally {
+            sendRequestBtn.disabled = false;
+        }
+    }
+
+    async function getFriendships(){
+        const { data, error } = await supabaseClient
+            .from("friendships")
+            .select("id, requester_id, receiver_id, status, created_at")
+            .or("requester_id.eq." + currentUser.id + ",receiver_id.eq." + currentUser.id)
+            .order("created_at", { ascending:false });
+        if (error) throw error;
+        return data || [];
+    }
+
+    async function getProfiles(ids){
+        if (!ids.length) return new Map();
+        const { data, error } = await supabaseClient
+            .from("profiles")
+            .select("id, username")
+            .in("id", ids);
+        if (error) throw error;
+        return new Map((data || []).map(p => [p.id, p]));
+    }
+
+    function friendRow(friendship, profile, incoming){
+        const name = profile?.username || "Unknown user";
+        const row = document.createElement("div");
+        row.className = "friendRow";
+
+        const avatar = document.createElement("div");
+        avatar.className = "friendAvatar";
+        avatar.textContent = initials(name);
+
+        const main = document.createElement("div");
+        main.className = "friendRowMain";
+        const strong = document.createElement("strong");
+        strong.textContent = "@" + name;
+        const small = document.createElement("span");
+        small.textContent = friendship.status === "accepted" ? "Friend" : (incoming ? "Incoming request" : "Request sent");
+        main.append(strong, small);
+
+        const actions = document.createElement("div");
+        actions.className = "friendRowActions";
+
+        if (friendship.status === "pending" && incoming) {
+            const accept = document.createElement("button");
+            accept.className = "friendSmallButton accept";
+            accept.type = "button";
+            accept.textContent = "Accept";
+            accept.addEventListener("click", () => updateFriendship(friendship.id, "accepted"));
+            const decline = document.createElement("button");
+            decline.className = "friendSmallButton";
+            decline.type = "button";
+            decline.textContent = "Decline";
+            decline.addEventListener("click", () => deleteFriendship(friendship.id));
+            actions.append(accept, decline);
+        } else if (friendship.status === "pending") {
+            const cancel = document.createElement("button");
+            cancel.className = "friendSmallButton";
+            cancel.type = "button";
+            cancel.textContent = "Cancel";
+            cancel.addEventListener("click", () => deleteFriendship(friendship.id));
+            actions.append(cancel);
+        } else if (friendship.status === "accepted") {
+            const remove = document.createElement("button");
+            remove.className = "friendSmallButton";
+            remove.type = "button";
+            remove.textContent = "Remove";
+            remove.addEventListener("click", () => deleteFriendship(friendship.id));
+            actions.append(remove);
+        }
+
+        row.append(avatar, main, actions);
+        return row;
+    }
+
+    function appendSection(title, items, profileMap, incoming){
+        const section = document.createElement("div");
+        section.className = "friendSection";
+        const titleEl = document.createElement("div");
+        titleEl.className = "friendSectionTitle";
+        titleEl.textContent = title;
+        section.appendChild(titleEl);
+        const rows = document.createElement("div");
+        rows.className = "friendRows";
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "friendEmptySmall";
+            empty.textContent = title === "Friends" ? "No friends yet." : "Nothing here.";
+            rows.appendChild(empty);
+        } else {
+            items.forEach(f => {
+                const otherId = f.requester_id === currentUser.id ? f.receiver_id : f.requester_id;
+                rows.appendChild(friendRow(f, profileMap.get(otherId), incoming));
+            });
+        }
+        section.appendChild(rows);
+        friendsContent.appendChild(section);
+    }
+
+    async function renderFriends(){
+        friendsContent.innerHTML = '<div class="friendLoading">Loading friends…</div>';
+        try {
+            const all = await getFriendships();
+            const ids = [...new Set(all.flatMap(f => [f.requester_id, f.receiver_id]).filter(id => id !== currentUser.id))];
+            const profileMap = await getProfiles(ids);
+            const accepted = all.filter(f => f.status === "accepted");
+            const incoming = all.filter(f => f.status === "pending" && f.receiver_id === currentUser.id);
+            const outgoing = all.filter(f => f.status === "pending" && f.requester_id === currentUser.id);
+            friendsContent.innerHTML = "";
+            appendSection("Friends", accepted, profileMap, false);
+            appendSection("Incoming requests", incoming, profileMap, true);
+            appendSection("Sent requests", outgoing, profileMap, false);
+        } catch (error) {
+            console.error("Friends load error:", error);
+            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not load friends. Check your connection and try again.</div>';
+        }
+    }
+
+    async function updateFriendship(id, status){
+        try {
+            const { error } = await supabaseClient
+                .from("friendships")
+                .update({ status })
+                .eq("id", id)
+                .eq("receiver_id", currentUser.id);
+            if (error) throw error;
+            await renderFriends();
+        } catch (error) {
+            console.error(error);
+            setStatus(actionStatus, "Could not update that request.", "error");
+        }
+    }
+
+    async function deleteFriendship(id){
+        try {
+            const { error } = await supabaseClient
+                .from("friendships")
+                .delete()
+                .eq("id", id);
+            if (error) throw error;
+            await renderFriends();
+        } catch (error) {
+            console.error(error);
+            setStatus(actionStatus, "Could not remove that connection.", "error");
+        }
+    }
+
+    async function initializeFriends(){
+        if (friendsInitialized) {
+            await renderFriends();
+            return;
+        }
+        friendsInitialized = true;
+        usernameInput.disabled = true;
+        saveUsernameBtn.disabled = true;
+        sendRequestBtn.disabled = true;
+        setStatus(accountStatus, "Connecting…");
+        try {
+            await ensureFriendAuth();
+            await loadMyProfile();
+            await renderFriends();
+            sendRequestBtn.disabled = false;
+        } catch (error) {
+            console.error("Friends initialization error:", error);
+            setStatus(accountStatus, "Friends could not connect to your account.", "error");
+            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not connect to the friends service.</div>';
+        }
+    }
+
+    saveUsernameBtn.addEventListener("click", saveUsername);
+    usernameInput.addEventListener("keydown", e => { if (e.key === "Enter") saveUsername(); });
+    sendRequestBtn.addEventListener("click", sendFriendRequest);
+    searchInput.addEventListener("keydown", e => { if (e.key === "Enter") sendFriendRequest(); });
+
+    if (friendsNav) {
+        friendsNav.addEventListener("click", initializeFriends);
+    }
+})();
 </script>

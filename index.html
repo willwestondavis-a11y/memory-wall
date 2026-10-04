@@ -745,6 +745,16 @@ button {
 .friendsEmpty span { font-size:12px; }
 
 
+
+.friendAuthCard { margin-top:12px; padding:13px; border-radius:16px; background:rgba(0,0,0,.045); }
+.friendAuthCard strong { display:block; font-size:12px; }
+.friendAuthHint { margin-top:4px; color:#888; font-size:11px; line-height:1.35; }
+.friendAuthInput { width:100%; box-sizing:border-box; margin-top:8px; border:0; outline:0; border-radius:12px; padding:11px 12px; background:rgba(255,255,255,.72); color:inherit; font:inherit; }
+.friendAuthButtons { display:flex; gap:8px; margin-top:8px; }
+.friendAuthButtons .friendPrimaryButton, .friendAuthSecondary { flex:1; }
+.friendAuthSecondary { border:0; border-radius:12px; padding:11px 14px; background:rgba(0,0,0,.08); color:inherit; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+.friendAuthInput:disabled, .friendAuthButtons button:disabled { opacity:.5; cursor:default; }
+
 /* =========================
    FRIENDS FUNCTIONAL UI
 ========================= */
@@ -1368,6 +1378,18 @@ button {
             <strong>Connect with friends</strong>
             <p>Add people by username. Wall sharing stays separate for now.</p>
         </div>
+    </div>
+
+    <div class="friendAuthCard" id="friendAuthCard">
+        <strong>Sign in to Friends</strong>
+        <div class="friendAuthHint">Use the same account you use for Memory Wall.</div>
+        <input id="friendEmailInput" class="friendAuthInput" type="email" autocomplete="email" placeholder="Email">
+        <input id="friendPasswordInput" class="friendAuthInput" type="password" autocomplete="current-password" placeholder="Password">
+        <div class="friendAuthButtons">
+            <button class="friendPrimaryButton" type="button" id="friendSignInButton">Sign in</button>
+            <button class="friendAuthSecondary" type="button" id="friendSignUpButton">Create account</button>
+        </div>
+        <div class="friendsStatus" id="friendAuthStatus"></div>
     </div>
 
     <div class="friendAccountCard" id="friendAccountCard">
@@ -3058,10 +3080,10 @@ applyWallSettings();
 /* =========================================================
    FUNCTIONAL FRIENDS
    Uses the existing Supabase profiles/friendships tables.
+   Requires a normal Supabase email/password session.
    No wall sharing is implemented here.
 ========================================================= */
 (function(){
-    const friendsSheetEl = document.getElementById("friendsSheet");
     const usernameInput = document.getElementById("friendUsernameInput");
     const saveUsernameBtn = document.getElementById("saveFriendUsername");
     const accountStatus = document.getElementById("friendAccountStatus");
@@ -3069,6 +3091,13 @@ applyWallSettings();
     const sendRequestBtn = document.getElementById("sendFriendRequest");
     const actionStatus = document.getElementById("friendActionStatus");
     const friendsContent = document.getElementById("friendsContent");
+
+    const authCard = document.getElementById("friendAuthCard");
+    const emailInput = document.getElementById("friendEmailInput");
+    const passwordInput = document.getElementById("friendPasswordInput");
+    const signInBtn = document.getElementById("friendSignInButton");
+    const signUpBtn = document.getElementById("friendSignUpButton");
+    const authStatus = document.getElementById("friendAuthStatus");
 
     let currentUser = null;
     let currentProfile = null;
@@ -3089,22 +3118,99 @@ applyWallSettings();
         return (s.slice(0,2) || "?").toUpperCase();
     }
 
-    async function ensureFriendAuth(){
+    function setAuthControls(enabled){
+        usernameInput.disabled = !enabled;
+        saveUsernameBtn.disabled = !enabled;
+        searchInput.disabled = !enabled;
+        sendRequestBtn.disabled = !enabled;
+        if (enabled) {
+            authCard.style.display = "none";
+        } else {
+            authCard.style.display = "block";
+        }
+    }
+
+    async function getExistingSession(){
         const { data, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
-        if (data.session && data.session.user) {
-            currentUser = data.session.user;
-            return currentUser;
-        }
-
-        const result = await supabaseClient.auth.signInAnonymously();
-        if (result.error) throw result.error;
-        currentUser = result.data.user;
-        if (!currentUser) throw new Error("Could not create a user session.");
+        currentUser = data.session?.user || null;
         return currentUser;
     }
 
+    function readableAuthError(error){
+        const message = String(error?.message || "");
+        if (/invalid login credentials/i.test(message)) return "Incorrect email or password.";
+        if (/email not confirmed/i.test(message)) return "Please confirm your email first, then sign in.";
+        if (/rate limit/i.test(message)) return "Supabase is temporarily limiting email requests. Try again later.";
+        return message || "Could not connect to your account.";
+    }
+
+    async function signIn(){
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        if (!email || !password) {
+            setStatus(authStatus, "Enter your email and password.", "error");
+            return;
+        }
+        signInBtn.disabled = true;
+        signUpBtn.disabled = true;
+        setStatus(authStatus, "Signing in…");
+        try {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            currentUser = data.user;
+            setStatus(authStatus, "Signed in.", "success");
+            await loadMyProfile();
+            await renderFriends();
+        } catch (error) {
+            console.error("Friends sign-in error:", error);
+            setStatus(authStatus, readableAuthError(error), "error");
+        } finally {
+            signInBtn.disabled = false;
+            signUpBtn.disabled = false;
+        }
+    }
+
+    async function signUp(){
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        if (!email || !password) {
+            setStatus(authStatus, "Enter an email and password.", "error");
+            return;
+        }
+        if (password.length < 6) {
+            setStatus(authStatus, "Your password must be at least 6 characters.", "error");
+            return;
+        }
+        signInBtn.disabled = true;
+        signUpBtn.disabled = true;
+        setStatus(authStatus, "Creating account…");
+        try {
+            const { data, error } = await supabaseClient.auth.signUp({
+                email,
+                password,
+                options: { emailRedirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) throw error;
+            if (data.session && data.user) {
+                currentUser = data.user;
+                setStatus(authStatus, "Account created and signed in.", "success");
+                await loadMyProfile();
+                await renderFriends();
+            } else {
+                setStatus(authStatus, "Account created. Check your email to confirm it, then sign in.", "success");
+            }
+        } catch (error) {
+            console.error("Friends sign-up error:", error);
+            setStatus(authStatus, readableAuthError(error), "error");
+        } finally {
+            signInBtn.disabled = false;
+            signUpBtn.disabled = false;
+        }
+    }
+
     async function loadMyProfile(){
+        if (!currentUser) return;
         const { data, error } = await supabaseClient
             .from("profiles")
             .select("id, username")
@@ -3125,33 +3231,35 @@ applyWallSettings();
         }
 
         usernameInput.value = currentProfile.username || "";
-        usernameInput.disabled = false;
-        saveUsernameBtn.disabled = false;
-        setStatus(accountStatus, currentProfile.username ? "You are signed in on this device." : "Choose a username so friends can find you.");
+        setAuthControls(true);
+        setStatus(accountStatus, currentProfile.username ? "Signed in. Friends can find you as @" + currentProfile.username + "." : "Choose a username so friends can find you.");
     }
 
     async function saveUsername(){
         const value = usernameInput.value.trim().toLowerCase();
+        if (!currentUser) { setStatus(accountStatus, "Sign in first.", "error"); return; }
         if (!usernameLooksValid(value)) {
             setStatus(accountStatus, "Use 3–20 letters, numbers, or underscores.", "error");
             return;
         }
         saveUsernameBtn.disabled = true;
         setStatus(accountStatus, "Saving…");
-        const { data, error } = await supabaseClient
-            .from("profiles")
-            .update({ username: value })
-            .eq("id", currentUser.id)
-            .select("id, username")
-            .single();
-        saveUsernameBtn.disabled = false;
-        if (error) {
-            const duplicate = error.code === "23505";
-            setStatus(accountStatus, duplicate ? "That username is already taken." : "Could not save your username.", "error");
-            return;
+        try {
+            const { data, error } = await supabaseClient
+                .from("profiles")
+                .update({ username: value })
+                .eq("id", currentUser.id)
+                .select("id, username")
+                .single();
+            if (error) throw error;
+            currentProfile = data;
+            setStatus(accountStatus, "Username saved. Friends can find you as @" + value + ".", "success");
+        } catch (error) {
+            console.error(error);
+            setStatus(accountStatus, error.code === "23505" ? "That username is already taken." : "Could not save your username.", "error");
+        } finally {
+            saveUsernameBtn.disabled = false;
         }
-        currentProfile = data;
-        setStatus(accountStatus, "Username saved. Friends can find you as @" + value + ".", "success");
     }
 
     async function getExistingFriendship(targetId){
@@ -3175,18 +3283,15 @@ applyWallSettings();
     }
 
     async function sendFriendRequest(){
+        if (!currentUser) { setStatus(actionStatus, "Sign in first.", "error"); return; }
         setStatus(actionStatus, "");
         const username = searchInput.value.trim().toLowerCase();
         if (!usernameLooksValid(username)) {
-            setStatus(actionStatus, "Enter a username with 3–20 letters, numbers, or underscores.", "error");
-            return;
+            setStatus(actionStatus, "Enter a username with 3–20 letters, numbers, or underscores.", "error"); return;
         }
         if (!currentProfile || !currentProfile.username) {
-            setStatus(actionStatus, "Choose your username first.", "error");
-            usernameInput.focus();
-            return;
+            setStatus(actionStatus, "Choose your username first.", "error"); usernameInput.focus(); return;
         }
-
         sendRequestBtn.disabled = true;
         try {
             const { data: matches, error: searchError } = await supabaseClient
@@ -3196,14 +3301,8 @@ applyWallSettings();
                 .limit(5);
             if (searchError) throw searchError;
             const target = (matches || []).find(p => p.username && p.username.toLowerCase() === username);
-            if (!target) {
-                setStatus(actionStatus, "No user found with that username.", "error");
-                return;
-            }
-            if (target.id === currentUser.id) {
-                setStatus(actionStatus, "You cannot add yourself.", "error");
-                return;
-            }
+            if (!target) { setStatus(actionStatus, "No user found with that username.", "error"); return; }
+            if (target.id === currentUser.id) { setStatus(actionStatus, "You cannot add yourself.", "error"); return; }
 
             const existing = await getExistingFriendship(target.id);
             if (existing) {
@@ -3218,16 +3317,13 @@ applyWallSettings();
                 .from("friendships")
                 .insert({ requester_id: currentUser.id, receiver_id: target.id, status: "pending" });
             if (insertError) throw insertError;
-
             searchInput.value = "";
             setStatus(actionStatus, "Friend request sent to @" + target.username + ".", "success");
             await renderFriends();
         } catch (error) {
             console.error("Friend request error:", error);
-            setStatus(actionStatus, "Could not send the request. Try again.", "error");
-        } finally {
-            sendRequestBtn.disabled = false;
-        }
+            setStatus(actionStatus, "Could not send the request. Check your Supabase policies and try again.", "error");
+        } finally { sendRequestBtn.disabled = false; }
     }
 
     async function getFriendships(){
@@ -3242,91 +3338,42 @@ applyWallSettings();
 
     async function getProfiles(ids){
         if (!ids.length) return new Map();
-        const { data, error } = await supabaseClient
-            .from("profiles")
-            .select("id, username")
-            .in("id", ids);
+        const { data, error } = await supabaseClient.from("profiles").select("id, username").in("id", ids);
         if (error) throw error;
         return new Map((data || []).map(p => [p.id, p]));
     }
 
     function friendRow(friendship, profile, incoming){
         const name = profile?.username || "Unknown user";
-        const row = document.createElement("div");
-        row.className = "friendRow";
-
-        const avatar = document.createElement("div");
-        avatar.className = "friendAvatar";
-        avatar.textContent = initials(name);
-
-        const main = document.createElement("div");
-        main.className = "friendRowMain";
-        const strong = document.createElement("strong");
-        strong.textContent = "@" + name;
-        const small = document.createElement("span");
-        small.textContent = friendship.status === "accepted" ? "Friend" : (incoming ? "Incoming request" : "Request sent");
+        const row = document.createElement("div"); row.className = "friendRow";
+        const avatar = document.createElement("div"); avatar.className = "friendAvatar"; avatar.textContent = initials(name);
+        const main = document.createElement("div"); main.className = "friendRowMain";
+        const strong = document.createElement("strong"); strong.textContent = "@" + name;
+        const small = document.createElement("span"); small.textContent = friendship.status === "accepted" ? "Friend" : (incoming ? "Incoming request" : "Request sent");
         main.append(strong, small);
-
-        const actions = document.createElement("div");
-        actions.className = "friendRowActions";
-
+        const actions = document.createElement("div"); actions.className = "friendRowActions";
         if (friendship.status === "pending" && incoming) {
-            const accept = document.createElement("button");
-            accept.className = "friendSmallButton accept";
-            accept.type = "button";
-            accept.textContent = "Accept";
-            accept.addEventListener("click", () => updateFriendship(friendship.id, "accepted"));
-            const decline = document.createElement("button");
-            decline.className = "friendSmallButton";
-            decline.type = "button";
-            decline.textContent = "Decline";
-            decline.addEventListener("click", () => deleteFriendship(friendship.id));
-            actions.append(accept, decline);
+            const accept = document.createElement("button"); accept.className = "friendSmallButton accept"; accept.type = "button"; accept.textContent = "Accept"; accept.addEventListener("click", () => updateFriendship(friendship.id, "accepted"));
+            const decline = document.createElement("button"); decline.className = "friendSmallButton"; decline.type = "button"; decline.textContent = "Decline"; decline.addEventListener("click", () => deleteFriendship(friendship.id)); actions.append(accept, decline);
         } else if (friendship.status === "pending") {
-            const cancel = document.createElement("button");
-            cancel.className = "friendSmallButton";
-            cancel.type = "button";
-            cancel.textContent = "Cancel";
-            cancel.addEventListener("click", () => deleteFriendship(friendship.id));
-            actions.append(cancel);
+            const cancel = document.createElement("button"); cancel.className = "friendSmallButton"; cancel.type = "button"; cancel.textContent = "Cancel"; cancel.addEventListener("click", () => deleteFriendship(friendship.id)); actions.append(cancel);
         } else if (friendship.status === "accepted") {
-            const remove = document.createElement("button");
-            remove.className = "friendSmallButton";
-            remove.type = "button";
-            remove.textContent = "Remove";
-            remove.addEventListener("click", () => deleteFriendship(friendship.id));
-            actions.append(remove);
+            const remove = document.createElement("button"); remove.className = "friendSmallButton"; remove.type = "button"; remove.textContent = "Remove"; remove.addEventListener("click", () => deleteFriendship(friendship.id)); actions.append(remove);
         }
-
-        row.append(avatar, main, actions);
-        return row;
+        row.append(avatar, main, actions); return row;
     }
 
     function appendSection(title, items, profileMap, incoming){
-        const section = document.createElement("div");
-        section.className = "friendSection";
-        const titleEl = document.createElement("div");
-        titleEl.className = "friendSectionTitle";
-        titleEl.textContent = title;
-        section.appendChild(titleEl);
-        const rows = document.createElement("div");
-        rows.className = "friendRows";
-        if (!items.length) {
-            const empty = document.createElement("div");
-            empty.className = "friendEmptySmall";
-            empty.textContent = title === "Friends" ? "No friends yet." : "Nothing here.";
-            rows.appendChild(empty);
-        } else {
-            items.forEach(f => {
-                const otherId = f.requester_id === currentUser.id ? f.receiver_id : f.requester_id;
-                rows.appendChild(friendRow(f, profileMap.get(otherId), incoming));
-            });
-        }
-        section.appendChild(rows);
-        friendsContent.appendChild(section);
+        const section = document.createElement("div"); section.className = "friendSection";
+        const titleEl = document.createElement("div"); titleEl.className = "friendSectionTitle"; titleEl.textContent = title; section.appendChild(titleEl);
+        const rows = document.createElement("div"); rows.className = "friendRows";
+        if (!items.length) { const empty = document.createElement("div"); empty.className = "friendEmptySmall"; empty.textContent = title === "Friends" ? "No friends yet." : "Nothing here."; rows.appendChild(empty); }
+        else items.forEach(f => { const otherId = f.requester_id === currentUser.id ? f.receiver_id : f.requester_id; rows.appendChild(friendRow(f, profileMap.get(otherId), incoming)); });
+        section.appendChild(rows); friendsContent.appendChild(section);
     }
 
     async function renderFriends(){
+        if (!currentUser) return;
         friendsContent.innerHTML = '<div class="friendLoading">Loading friends…</div>';
         try {
             const all = await getFriendships();
@@ -3341,68 +3388,62 @@ applyWallSettings();
             appendSection("Sent requests", outgoing, profileMap, false);
         } catch (error) {
             console.error("Friends load error:", error);
-            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not load friends. Check your connection and try again.</div>';
+            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not load friends. Check your Supabase policies and try again.</div>';
         }
     }
 
     async function updateFriendship(id, status){
         try {
-            const { error } = await supabaseClient
-                .from("friendships")
-                .update({ status })
-                .eq("id", id)
-                .eq("receiver_id", currentUser.id);
-            if (error) throw error;
-            await renderFriends();
-        } catch (error) {
-            console.error(error);
-            setStatus(actionStatus, "Could not update that request.", "error");
-        }
+            const { error } = await supabaseClient.from("friendships").update({ status }).eq("id", id).eq("receiver_id", currentUser.id);
+            if (error) throw error; await renderFriends();
+        } catch (error) { console.error(error); setStatus(actionStatus, "Could not update that request.", "error"); }
     }
 
     async function deleteFriendship(id){
         try {
-            const { error } = await supabaseClient
-                .from("friendships")
-                .delete()
-                .eq("id", id);
-            if (error) throw error;
-            await renderFriends();
-        } catch (error) {
-            console.error(error);
-            setStatus(actionStatus, "Could not remove that connection.", "error");
-        }
+            const { error } = await supabaseClient.from("friendships").delete().eq("id", id);
+            if (error) throw error; await renderFriends();
+        } catch (error) { console.error(error); setStatus(actionStatus, "Could not remove that connection.", "error"); }
     }
 
     async function initializeFriends(){
         if (friendsInitialized) {
-            await renderFriends();
+            const user = await getExistingSession();
+            if (user) { await loadMyProfile(); await renderFriends(); }
             return;
         }
         friendsInitialized = true;
-        usernameInput.disabled = true;
-        saveUsernameBtn.disabled = true;
-        sendRequestBtn.disabled = true;
-        setStatus(accountStatus, "Connecting…");
+        setAuthControls(false);
+        setStatus(accountStatus, "Sign in to connect with friends.");
         try {
-            await ensureFriendAuth();
+            const user = await getExistingSession();
+            if (!user) {
+                friendsContent.innerHTML = '<div class="friendEmptySmall">Sign in above to start adding friends.</div>';
+                return;
+            }
             await loadMyProfile();
             await renderFriends();
-            sendRequestBtn.disabled = false;
         } catch (error) {
             console.error("Friends initialization error:", error);
-            setStatus(accountStatus, "Friends could not connect to your account.", "error");
-            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not connect to the friends service.</div>';
+            setStatus(accountStatus, "Could not load your account. Try signing in again.", "error");
+            friendsContent.innerHTML = '<div class="friendEmptySmall">Could not load Friends.</div>';
         }
     }
 
+    signInBtn.addEventListener("click", signIn);
+    signUpBtn.addEventListener("click", signUp);
+    passwordInput.addEventListener("keydown", e => { if (e.key === "Enter") signIn(); });
     saveUsernameBtn.addEventListener("click", saveUsername);
     usernameInput.addEventListener("keydown", e => { if (e.key === "Enter") saveUsername(); });
     sendRequestBtn.addEventListener("click", sendFriendRequest);
     searchInput.addEventListener("keydown", e => { if (e.key === "Enter") sendFriendRequest(); });
+    if (friendsNav) friendsNav.addEventListener("click", initializeFriends);
 
-    if (friendsNav) {
-        friendsNav.addEventListener("click", initializeFriends);
-    }
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        currentUser = session?.user || null;
+        if (currentUser && friendsInitialized) {
+            loadMyProfile().then(renderFriends).catch(console.error);
+        }
+    });
 })();
 </script>

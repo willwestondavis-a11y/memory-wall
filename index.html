@@ -4,41 +4,56 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-      content="width=device-width, initial-scale=1.0,
-               maximum-scale=1.0">
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 
-<!-- iPhone / iPad app mode -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Memory Wall">
 
-<!-- App icon -->
 <link rel="apple-touch-icon" href="icon.png">
 
 <title>Memory Wall</title>
 
-<style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<style>
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-html {
-    scroll-behavior: smooth;
+:root {
+  --wall-color: #f4f4f1;
+  --text-color: #171717;
+  --accent: #171717;
+  --card: rgba(255,255,255,.72);
+  --border: rgba(0,0,0,.08);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
 body {
-    margin: 0;
-    background: #f4f4f1;
-    color: #171717;
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    Inter,
+    Arial,
+    sans-serif;
+
+  background: var(--wall-color);
+  color: var(--text-color);
+
+  transition:
+    background-color .35s ease,
+    color .35s ease;
+
+  padding-bottom: 100px;
 }
 
 /* =========================
@@ -46,83 +61,106 @@ body {
 ========================= */
 
 header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 
-    height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  padding:
+    calc(18px + env(safe-area-inset-top))
+    22px
+    18px;
 
-    padding: 0 28px;
+  background: color-mix(
+    in srgb,
+    var(--wall-color) 78%,
+    transparent
+  );
 
-    background: rgba(244,244,241,.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-
-    border-bottom: 1px solid rgba(0,0,0,.08);
+  border-bottom: 1px solid var(--border);
 }
 
 .logo {
-    font-size: 22px;
-    font-weight: 750;
-    letter-spacing: -0.6px;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -1px;
 }
 
 .logo span {
-    color: #777;
-    font-weight: 500;
+  opacity: .45;
 }
 
-.headerRight {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.accountArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.photoCount {
-    color: #777;
-    font-size: 14px;
+.accountButton {
+  border: 0;
+  background: rgba(0,0,0,.07);
+  color: var(--text-color);
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.accountButton:hover {
+  background: rgba(0,0,0,.12);
 }
 
 /* =========================
-   BUTTONS
+   MAIN
 ========================= */
 
-button {
-    font-family: inherit;
+main {
+  max-width: 1400px;
+  margin: auto;
+  padding: 22px;
+}
+
+.topControls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
 }
 
 .addButton {
-    border: 0;
+  border: 0;
+  border-radius: 999px;
 
-    background: #171717;
-    color: white;
+  background: var(--accent);
+  color: white;
 
-    padding: 11px 18px;
+  padding: 12px 20px;
 
-    border-radius: 11px;
+  font-size: 14px;
+  font-weight: 650;
 
-    font-size: 14px;
-    font-weight: 650;
+  cursor: pointer;
 
-    cursor: pointer;
-
-    transition:
-        transform .15s,
-        background .15s;
+  transition:
+    transform .2s ease,
+    opacity .2s ease;
 }
 
 .addButton:hover {
-    transform: translateY(-1px);
-    background: #303030;
+  transform: translateY(-1px);
 }
 
 .addButton:active {
-    transform: scale(.97);
+  transform: scale(.97);
 }
 
 /* =========================
@@ -130,247 +168,158 @@ button {
 ========================= */
 
 .dropArea {
-    width: min(1100px, calc(100% - 32px));
+  border: 1.5px dashed rgba(0,0,0,.18);
+  border-radius: 22px;
 
-    margin: 30px auto 20px;
+  padding: 28px;
+  text-align: center;
 
-    border: 1.5px dashed #b7b7b2;
+  margin-bottom: 25px;
 
-    border-radius: 18px;
-
-    min-height: 150px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    text-align: center;
-
-    background: rgba(255,255,255,.45);
-
-    transition:
-        border-color .2s,
-        background .2s,
-        transform .2s;
+  transition:
+    background .25s ease,
+    border-color .25s ease,
+    transform .25s ease;
 }
 
 .dropArea.dragging {
-    border-color: #222;
-    background: white;
-    transform: scale(1.01);
+  background: rgba(255,255,255,.4);
+  border-color: var(--text-color);
+  transform: scale(1.01);
 }
 
-.dropText {
-    padding: 25px;
+.dropAreaTitle {
+  font-size: 15px;
+  font-weight: 650;
 }
 
-.dropTitle {
-    font-size: 18px;
-    font-weight: 650;
-    margin-bottom: 7px;
-}
-
-.dropSubtitle {
-    color: #888;
-    font-size: 14px;
+.dropAreaSub {
+  margin-top: 5px;
+  font-size: 13px;
+  opacity: .5;
 }
 
 /* =========================
-   COLLAGE
+   GALLERY
 ========================= */
 
 .gallery {
-    width: min(1500px, calc(100% - 28px));
-
-    margin: 0 auto;
-
-    padding:
-        10px
-        0
-        100px;
-
-    columns: 5 220px;
-
-    column-gap: 13px;
+  column-count: 4;
+  column-gap: 15px;
 }
 
 .photoCard {
-    position: relative;
+  position: relative;
 
-    display: inline-block;
+  display: inline-block;
+  width: 100%;
 
-    width: 100%;
+  margin-bottom: 15px;
 
-    margin: 0 0 13px;
+  break-inside: avoid;
 
-    break-inside: avoid;
+  border-radius: 18px;
+  overflow: hidden;
 
-    overflow: hidden;
+  background: var(--card);
 
-    border-radius: 13px;
+  box-shadow:
+    0 5px 25px rgba(0,0,0,.07);
 
-    background: #ddd;
+  cursor: pointer;
 
-    cursor: pointer;
-
-    box-shadow:
-        0 2px 10px rgba(0,0,0,.06);
-
-    animation:
-        appear .35s ease both;
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
 }
 
-@keyframes appear {
+.photoCard:hover {
+  transform: translateY(-3px);
 
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.12);
 }
 
 .photoCard img {
-    display: block;
-
-    width: 100%;
-    height: auto;
-
-    transition:
-        transform .35s ease,
-        filter .35s ease;
+  display: block;
+  width: 100%;
+  height: auto;
 }
-
-.photoCard:hover img {
-    transform: scale(1.025);
-}
-
-/* =========================
-   PHOTO INFO
-========================= */
 
 .photoInfo {
-    position: absolute;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-    left: 0;
-    right: 0;
-    bottom: 0;
+  padding: 30px 12px 12px;
 
-    padding: 42px 14px 13px;
+  color: white;
 
-    color: white;
+  background:
+    linear-gradient(
+      transparent,
+      rgba(0,0,0,.65)
+    );
 
-    background:
-        linear-gradient(
-            transparent,
-            rgba(0,0,0,.72)
-        );
+  opacity: 0;
 
-    opacity: 0;
-
-    transform:
-        translateY(8px);
-
-    transition:
-        opacity .2s,
-        transform .2s;
-
-    pointer-events: none;
+  transition: opacity .2s ease;
 }
 
 .photoCard:hover .photoInfo {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
 }
 
 .photoDate {
-    font-size: 14px;
-    font-weight: 650;
+  font-size: 12px;
+  font-weight: 550;
 }
-
-.photoMeta {
-    margin-top: 3px;
-
-    font-size: 11px;
-
-    color: rgba(255,255,255,.75);
-}
-
-/* =========================
-   DELETE BUTTON
-========================= */
 
 .deletePhoto {
-    position: absolute;
+  position: absolute;
+  top: 10px;
+  right: 10px;
 
-    top: 9px;
-    right: 9px;
+  width: 30px;
+  height: 30px;
 
-    width: 31px;
-    height: 31px;
+  border: 0;
+  border-radius: 50%;
 
-    border: 0;
-    border-radius: 50%;
+  background: rgba(0,0,0,.55);
+  color: white;
 
-    background: rgba(0,0,0,.62);
+  cursor: pointer;
 
-    color: white;
+  opacity: 0;
 
-    font-size: 17px;
-
-    cursor: pointer;
-
-    opacity: 0;
-
-    transition:
-        opacity .2s,
-        transform .15s;
+  transition: opacity .2s ease;
 }
 
 .photoCard:hover .deletePhoto {
-    opacity: 1;
-}
-
-.deletePhoto:hover {
-    transform: scale(1.08);
-    background: #d93030;
+  opacity: 1;
 }
 
 /* =========================
-   EMPTY STATE
+   EMPTY
 ========================= */
 
-.empty {
-    width: min(700px, calc(100% - 40px));
+.emptyState {
+  text-align: center;
+  padding: 70px 20px;
 
-    margin: 75px auto;
-
-    text-align: center;
-
-    color: #777;
+  opacity: .5;
 }
 
-.emptyIcon {
-    font-size: 48px;
-    margin-bottom: 15px;
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 650;
+  margin-bottom: 8px;
 }
 
-.empty h2 {
-    margin: 0 0 8px;
-
-    color: #222;
-
-    font-size: 25px;
-}
-
-.empty p {
-    margin: 0;
-
-    line-height: 1.6;
+.emptyStateText {
+  font-size: 14px;
 }
 
 /* =========================
@@ -378,97 +327,55 @@ button {
 ========================= */
 
 .modal {
-    position: fixed;
+  position: fixed;
+  inset: 0;
 
-    inset: 0;
+  z-index: 100;
 
-    z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
 
-    display: none;
+  padding: 20px;
 
-    align-items: center;
-    justify-content: center;
+  background: rgba(0,0,0,.72);
 
-    padding: 20px;
-
-    background: rgba(0,0,0,.72);
-
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
-.modal.open {
-    display: flex;
+.modal.show {
+  display: flex;
 }
 
-.modalBox {
-    width: min(850px, 100%);
+.modal img {
+  max-width: 95vw;
+  max-height: 88vh;
 
-    max-height: 92vh;
+  object-fit: contain;
 
-    overflow: hidden;
+  border-radius: 15px;
 
-    background: #fff;
-
-    border-radius: 20px;
-
-    box-shadow:
-        0 30px 100px rgba(0,0,0,.4);
-
-    position: relative;
+  box-shadow:
+    0 20px 80px rgba(0,0,0,.4);
 }
 
-.modalImage {
-    display: block;
+.modalClose {
+  position: fixed;
+  top: 20px;
+  right: 20px;
 
-    width: 100%;
+  width: 42px;
+  height: 42px;
 
-    max-height: 75vh;
+  border: 0;
+  border-radius: 50%;
 
-    object-fit: contain;
+  background: rgba(255,255,255,.15);
+  color: white;
 
-    background: #111;
-}
+  font-size: 22px;
 
-.modalDetails {
-    padding: 17px 20px;
-}
-
-.modalDate {
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.modalName {
-    margin-top: 4px;
-
-    color: #777;
-
-    font-size: 13px;
-}
-
-.closeModal {
-    position: absolute;
-
-    top: 12px;
-    right: 12px;
-
-    width: 38px;
-    height: 38px;
-
-    border: 0;
-
-    border-radius: 50%;
-
-    background: rgba(0,0,0,.65);
-
-    color: white;
-
-    font-size: 22px;
-
-    cursor: pointer;
-
-    z-index: 2;
+  cursor: pointer;
 }
 
 /* =========================
@@ -476,295 +383,642 @@ button {
 ========================= */
 
 .toast {
-    position: fixed;
+  position: fixed;
 
-    bottom: 24px;
-    left: 50%;
+  left: 50%;
+  bottom: 95px;
 
-    transform:
-        translate(-50%, 20px);
+  transform:
+    translateX(-50%)
+    translateY(20px);
 
-    z-index: 1000;
+  z-index: 300;
 
-    background: #171717;
-    color: white;
+  background: rgba(20,20,20,.9);
+  color: white;
 
-    padding: 12px 18px;
+  padding: 11px 16px;
 
-    border-radius: 12px;
+  border-radius: 999px;
 
-    font-size: 14px;
+  font-size: 13px;
 
-    opacity: 0;
+  opacity: 0;
+  pointer-events: none;
 
-    pointer-events: none;
-
-    transition:
-        opacity .25s,
-        transform .25s;
+  transition:
+    opacity .25s ease,
+    transform .25s ease;
 }
 
 .toast.show {
-    opacity: 1;
+  opacity: 1;
 
-    transform:
-        translate(-50%, 0);
+  transform:
+    translateX(-50%)
+    translateY(0);
+}
+
+/* =========================
+   BOTTOM NAV
+========================= */
+
+.bottomNav {
+  position: fixed;
+
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+
+  transform: translateX(-50%);
+
+  z-index: 200;
+
+  width: min(500px, calc(100% - 28px));
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  padding: 7px;
+
+  background: rgba(255,255,255,.82);
+
+  border: 1px solid rgba(0,0,0,.08);
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 10px 40px rgba(0,0,0,.14);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.bottomNav button {
+  border: 0;
+  background: transparent;
+
+  color: #555;
+
+  padding: 9px 4px;
+
+  border-radius: 18px;
+
+  cursor: pointer;
+
+  transition:
+    background .2s ease,
+    color .2s ease,
+    transform .2s ease;
+}
+
+.bottomNav button.active {
+  background: rgba(0,0,0,.08);
+  color: #111;
+}
+
+.bottomNav button:active {
+  transform: scale(.94);
+}
+
+.navIcon {
+  display: block;
+  font-size: 20px;
+  line-height: 20px;
+}
+
+.navLabel {
+  display: block;
+  margin-top: 4px;
+
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* =========================
+   SHEETS
+========================= */
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 400;
+
+  background: rgba(0,0,0,.35);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity .3s ease;
+
+  backdrop-filter: blur(2px);
+}
+
+.sheetOverlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: fixed;
+
+  left: 50%;
+  bottom: 0;
+
+  z-index: 500;
+
+  width: min(600px, 100%);
+
+  max-height: 82vh;
+
+  overflow-y: auto;
+
+  transform:
+    translate(-50%, 105%);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--wall-color) 94%,
+      white
+    );
+
+  color: var(--text-color);
+
+  border-radius:
+    28px
+    28px
+    0
+    0;
+
+  padding:
+    12px
+    20px
+    calc(25px + env(safe-area-inset-bottom));
+
+  box-shadow:
+    0 -15px 60px rgba(0,0,0,.2);
+
+  transition:
+    transform .38s cubic-bezier(.22,.8,.25,1);
+
+  pointer-events: none;
+}
+
+.sheet.show {
+  transform:
+    translate(-50%, 0);
+
+  pointer-events: auto;
+}
+
+.sheetHandle {
+  width: 42px;
+  height: 5px;
+
+  margin: 2px auto 20px;
+
+  border-radius: 999px;
+
+  background: rgba(0,0,0,.15);
+}
+
+.sheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 20px;
+}
+
+.sheetTitle {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -.5px;
+}
+
+.sheetClose {
+  width: 34px;
+  height: 34px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: rgba(0,0,0,.07);
+
+  cursor: pointer;
+
+  font-size: 18px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 750;
+
+  text-transform: uppercase;
+
+  letter-spacing: .8px;
+
+  opacity: .45;
+
+  margin:
+    22px
+    2px
+    9px;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+}
+
+.textInput {
+  width: 100%;
+
+  border: 1px solid var(--border);
+
+  background: rgba(255,255,255,.7);
+
+  color: var(--text-color);
+
+  border-radius: 14px;
+
+  padding: 13px 14px;
+
+  outline: none;
+
+  font-size: 14px;
+
+  transition:
+    border .2s ease,
+    box-shadow .2s ease;
+}
+
+.textInput:focus {
+  border-color: rgba(0,0,0,.25);
+
+  box-shadow:
+    0 0 0 4px rgba(0,0,0,.04);
+}
+
+.smallButton {
+  border: 0;
+
+  background: var(--accent);
+  color: white;
+
+  padding: 0 16px;
+
+  border-radius: 14px;
+
+  font-weight: 650;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+}
+
+/* =========================
+   FRIENDS
+========================= */
+
+.friendItem {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.friendName {
+  font-weight: 650;
+}
+
+.friendStatus {
+  font-size: 12px;
+  opacity: .45;
+}
+
+.friendAction {
+  border: 0;
+
+  background: rgba(0,0,0,.07);
+
+  padding: 8px 12px;
+
+  border-radius: 999px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+/* =========================
+   WALLS
+========================= */
+
+.wallItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+
+  padding: 13px;
+
+  margin-bottom: 8px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 17px;
+
+  background: rgba(255,255,255,.5);
+
+  cursor: pointer;
+
+  transition:
+    transform .2s ease,
+    background .2s ease;
+}
+
+.wallItem:hover {
+  transform: translateY(-1px);
+}
+
+.wallItem.active {
+  background: rgba(0,0,0,.08);
+}
+
+.wallColorDot {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 auto;
+
+  border-radius: 12px;
+
+  border: 1px solid rgba(0,0,0,.1);
+}
+
+.wallInfo {
+  flex: 1;
+  text-align: left;
+}
+
+.wallName {
+  font-weight: 700;
+}
+
+.wallPrivacy {
+  font-size: 11px;
+  opacity: .45;
+
+  margin-top: 2px;
+}
+
+.wallEdit {
+  width: 34px;
+  height: 34px;
+
+  border: 0;
+
+  background: rgba(0,0,0,.06);
+
+  border-radius: 50%;
+
+  cursor: pointer;
+}
+
+/* =========================
+   CUSTOMIZE
+========================= */
+
+.customRow {
+  padding: 16px 0;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.customRowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 12px;
+}
+
+.customLabel {
+  font-weight: 700;
+}
+
+.customValue {
+  font-size: 12px;
+  opacity: .5;
+}
+
+.colorControl {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.colorPicker {
+  width: 48px;
+  height: 40px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  overflow: hidden;
+
+  cursor: pointer;
+}
+
+.range {
+  width: 100%;
+}
+
+.recentColors {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  margin-top: 12px;
+}
+
+.recentColor {
+  width: 28px;
+  height: 28px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(0,0,0,.1);
+
+  cursor: pointer;
+}
+
+/* =========================
+   ACCOUNT
+========================= */
+
+.accountSheet input {
+  margin-bottom: 8px;
+}
+
+.accountButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.accountButtons button {
+  flex: 1;
+
+  padding: 12px;
+
+  border: 0;
+  border-radius: 13px;
+
+  cursor: pointer;
+
+  font-weight: 650;
+}
+
+.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.secondary {
+  background: rgba(0,0,0,.07);
+  color: var(--text-color);
 }
 
 /* =========================
    MOBILE
 ========================= */
 
-@media(max-width: 700px) {
-
-    header {
-        height: 65px;
-
-        padding:
-            0 14px;
-    }
-
-    .logo {
-        font-size: 18px;
-    }
-
-    .photoCount {
-        display: none;
-    }
-
-    .addButton {
-        padding:
-            9px 13px;
-
-        font-size: 13px;
-    }
-
-    .dropArea {
-        width:
-            calc(100% - 22px);
-
-        margin-top: 16px;
-
-        min-height: 105px;
-
-        border-radius: 14px;
-    }
-
-    .dropTitle {
-        font-size: 16px;
-    }
-
-    .dropSubtitle {
-        font-size: 12px;
-    }
-
-    .gallery {
-        width:
-            calc(100% - 18px);
-
-        columns: 2 140px;
-
-        column-gap: 7px;
-
-        padding-bottom: 80px;
-    }
-
-    .photoCard {
-        margin-bottom: 7px;
-        border-radius: 9px;
-    }
-
-    /*
-       On phones, hover doesn't exist,
-       so info can be shown by tapping
-       the photo through the modal.
-    */
-
-    .photoInfo {
-        display: none;
-    }
-
-    .deletePhoto {
-        opacity: 1;
-
-        width: 29px;
-        height: 29px;
-
-        font-size: 15px;
-    }
-
-    .modal {
-        padding: 8px;
-    }
-
-    .modalBox {
-        border-radius: 15px;
-    }
-
-    .modalImage {
-        max-height: 78vh;
-    }
-
+@media (max-width: 900px) {
+  .gallery {
+    column-count: 3;
+  }
 }
 
-/* Very small phones */
+@media (max-width: 600px) {
+  header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 
-@media(max-width: 390px) {
+  .logo {
+    font-size: 21px;
+  }
 
-    .gallery {
-        columns: 2 120px;
-    }
+  .gallery {
+    column-count: 2;
+    column-gap: 9px;
+  }
 
+  .photoCard {
+    margin-bottom: 9px;
+    border-radius: 13px;
+  }
+
+  main {
+    padding: 14px;
+  }
+
+  .dropArea {
+    padding: 22px 15px;
+  }
+
+  .deletePhoto {
+    opacity: 1;
+  }
 }
 
+@media (max-width: 380px) {
+  .gallery {
+    column-count: 1;
+  }
+}
 </style>
 </head>
 
-
 <body>
 
-
-<!-- =========================
-     HEADER
-========================= -->
-
 <header>
+  <div class="logo">
+    Memory Wall <span>∞</span>
+  </div>
 
-    <div class="logo">
-        Memory Wall
-        <span>∞</span>
-    </div>
-
-    <div class="headerRight">
-
-        <div class="photoCount"
-             id="photoCount">
-            0 photos
-        </div>
-
-        <button
-            class="addButton"
-            id="addButton">
-
-            + Add photos
-
-        </button>
-
-    </div>
-
+  <div class="accountArea">
+    <button class="accountButton" id="accountButton">
+      Sign in
+    </button>
+  </div>
 </header>
 
+<main>
 
-<!-- =========================
-     FILE INPUT
-========================= -->
+  <div class="topControls">
+    <button class="addButton" id="addPhotosButton">
+      + Add photos
+    </button>
 
-<input
-    type="file"
-    id="fileInput"
-    accept="image/*"
-    multiple
-    hidden
->
+    <input
+      id="fileInput"
+      type="file"
+      accept="image/*"
+      multiple
+      hidden
+    >
+  </div>
 
-
-<!-- =========================
-     DROP AREA
-========================= -->
-
-<div
-    class="dropArea"
-    id="dropArea">
-
-    <div class="dropText">
-
-        <div class="dropTitle">
-            Build your memory wall
-        </div>
-
-        <div class="dropSubtitle">
-            Drop photos here or tap “Add photos”
-        </div>
-
+  <div class="dropArea" id="dropArea">
+    <div class="dropAreaTitle">
+      Drop photos here
     </div>
 
-</div>
+    <div class="dropAreaSub">
+      or tap “Add photos”
+    </div>
+  </div>
 
+  <div class="gallery" id="gallery"></div>
 
-<!-- =========================
-     GALLERY
-========================= -->
-
-<div
-    class="gallery"
-    id="gallery">
-</div>
-
-
-<!-- =========================
-     EMPTY STATE
-========================= -->
-
-<div
-    class="empty"
-    id="emptyState">
-
-    <div class="emptyIcon">
-        🖼️
+  <div class="emptyState" id="emptyState">
+    <div class="emptyStateTitle">
+      Your wall is empty
     </div>
 
-    <h2>
-        Your wall is empty
-    </h2>
+    <div class="emptyStateText">
+      Add some photos to start building your memories.
+    </div>
+  </div>
 
-    <p>
-        Add your first photos and start building
-        your endless collection of memories.
-    </p>
-
-</div>
+</main>
 
 
 <!-- =========================
      PHOTO MODAL
 ========================= -->
 
-<div
-    class="modal"
-    id="modal">
+<div class="modal" id="photoModal">
+  <button class="modalClose" id="modalClose">
+    ×
+  </button>
 
-    <div class="modalBox">
-
-        <button
-            class="closeModal"
-            id="closeModal">
-
-            ×
-
-        </button>
-
-        <img
-            class="modalImage"
-            id="modalImage"
-            alt=""
-        >
-
-        <div class="modalDetails">
-
-            <div
-                class="modalDate"
-                id="modalDate">
-            </div>
-
-            <div
-                class="modalName"
-                id="modalName">
-            </div>
-
-        </div>
-
-    </div>
-
+  <img id="modalImage" alt="">
 </div>
 
 
@@ -772,1256 +1026,573 @@ button {
      TOAST
 ========================= -->
 
-<div
-    class="toast"
-    id="toast">
-</div>
+<div class="toast" id="toast"></div>
+
+
+<!-- =========================
+     SHEET OVERLAY
+========================= -->
+
+<div class="sheetOverlay" id="sheetOverlay"></div>
+
+
+<!-- =========================
+     FRIENDS SHEET
+========================= -->
+
+<section class="sheet" id="friendsSheet">
+
+  <div class="sheetHandle"></div>
+
+  <div class="sheetHeader">
+    <div class="sheetTitle">
+      Friends
+    </div>
+
+    <button class="sheetClose" data-close>
+      ×
+    </button>
+  </div>
+
+  <div class="sectionTitle">
+    Your user
+  </div>
+
+  <div class="inputRow">
+    <input
+      class="textInput"
+      id="usernameInput"
+      placeholder="Choose a username"
+      maxlength="24"
+    >
+
+    <button
+      class="smallButton"
+      id="saveUsername"
+    >
+      Save
+    </button>
+  </div>
+
+
+  <div class="sectionTitle">
+    Add friend
+  </div>
+
+  <div class="inputRow">
+    <input
+      class="textInput"
+      id="friendSearch"
+      placeholder="Username"
+      maxlength="24"
+    >
+
+    <button
+      class="smallButton"
+      id="addFriendButton"
+    >
+      Add
+    </button>
+  </div>
+
+
+  <div class="sectionTitle">
+    Requests
+  </div>
+
+  <div id="friendRequests">
+    <div class="friendStatus">
+      No friend requests.
+    </div>
+  </div>
+
+
+  <div class="sectionTitle">
+    Friends
+  </div>
+
+  <div id="friendsList">
+    <div class="friendStatus">
+      No friends yet.
+    </div>
+  </div>
+
+</section>
+
+
+<!-- =========================
+     WALLS SHEET
+========================= -->
+
+<section class="sheet" id="wallsSheet">
+
+  <div class="sheetHandle"></div>
+
+  <div class="sheetHeader">
+    <div class="sheetTitle">
+      Walls
+    </div>
+
+    <button class="sheetClose" data-close>
+      ×
+    </button>
+  </div>
+
+  <button
+    class="addButton"
+    id="createWallButton"
+    style="width:100%;margin-bottom:18px;"
+  >
+    + New wall
+  </button>
+
+  <div id="wallList"></div>
+
+</section>
+
+
+<!-- =========================
+     RENAME SHEET
+========================= -->
+
+<section class="sheet" id="renameSheet">
+
+  <div class="sheetHandle"></div>
+
+  <div class="sheetHeader">
+    <div class="sheetTitle">
+      Edit wall
+    </div>
+
+    <button class="sheetClose" data-close>
+      ×
+    </button>
+  </div>
+
+  <div class="sectionTitle">
+    Wall name
+  </div>
+
+  <input
+    class="textInput"
+    id="wallNameInput"
+    maxlength="40"
+    placeholder="Wall name"
+  >
+
+  <div
+    style="
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:18px;
+      padding:14px;
+      border:1px solid var(--border);
+      border-radius:16px;
+    "
+  >
+    <div>
+      <div style="font-weight:700;">
+        Public wall
+      </div>
+
+      <div style="font-size:12px;opacity:.5;margin-top:3px;">
+        Anyone with the wall can view it.
+      </div>
+    </div>
+
+    <input
+      type="checkbox"
+      id="wallPublicToggle"
+      style="width:20px;height:20px;"
+    >
+  </div>
+
+  <div
+    style="
+      display:flex;
+      gap:8px;
+      margin-top:15px;
+    "
+  >
+    <button
+      class="secondary"
+      id="cancelWallName"
+      style="
+        flex:1;
+        border:0;
+        border-radius:14px;
+        padding:13px;
+        cursor:pointer;
+      "
+    >
+      Cancel
+    </button>
+
+    <button
+      class="primary"
+      id="saveWallName"
+      style="
+        flex:1;
+        border:0;
+        border-radius:14px;
+        padding:13px;
+        cursor:pointer;
+      "
+    >
+      Save
+    </button>
+  </div>
+
+</section>
+
+
+<!-- =========================
+     CUSTOMIZE SHEET
+========================= -->
+
+<section class="sheet" id="customizeSheet">
+
+  <div class="sheetHandle"></div>
+
+  <div class="sheetHeader">
+    <div class="sheetTitle">
+      Customize
+    </div>
+
+    <button class="sheetClose" data-close>
+      ×
+    </button>
+  </div>
+
+
+  <div class="customRow">
+
+    <div class="customRowHeader">
+      <div class="customLabel">
+        Wall color
+      </div>
+
+      <div
+        class="customValue"
+        id="wallColorValue"
+      >
+        #F4F4F1
+      </div>
+    </div>
+
+    <div class="colorControl">
+
+      <input
+        class="colorPicker"
+        type="color"
+        id="wallColorPicker"
+        value="#f4f4f1"
+      >
+
+      <input
+        class="range"
+        type="range"
+        id="wallBrightness"
+        min="20"
+        max="150"
+        value="100"
+      >
+
+    </div>
+
+    <div
+      class="recentColors"
+      id="recentWallColors"
+    ></div>
+
+  </div>
+
+
+  <div class="customRow">
+
+    <div class="customRowHeader">
+      <div class="customLabel">
+        Text color
+      </div>
+
+      <div
+        class="customValue"
+        id="textColorValue"
+      >
+        #171717
+      </div>
+    </div>
+
+    <div class="colorControl">
+
+      <input
+        class="colorPicker"
+        type="color"
+        id="textColorPicker"
+        value="#171717"
+      >
+
+      <input
+        class="range"
+        type="range"
+        id="textBrightness"
+        min="20"
+        max="150"
+        value="100"
+      >
+
+    </div>
+
+    <div
+      class="recentColors"
+      id="recentTextColors"
+    ></div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================
+     ACCOUNT SHEET
+========================= -->
+
+<section class="sheet accountSheet" id="accountSheet">
+
+  <div class="sheetHandle"></div>
+
+  <div class="sheetHeader">
+    <div class="sheetTitle">
+      Account
+    </div>
+
+    <button class="sheetClose" data-close>
+      ×
+    </button>
+  </div>
+
+  <div id="accountLoggedOut">
+
+    <div class="sectionTitle">
+      Email
+    </div>
+
+    <input
+      class="textInput"
+      id="emailInput"
+      type="email"
+      placeholder="Email"
+    >
+
+    <div class="sectionTitle">
+      Password
+    </div>
+
+    <input
+      class="textInput"
+      id="passwordInput"
+      type="password"
+      placeholder="Password"
+    >
+
+    <div
+      class="accountButtons"
+      style="margin-top:12px;"
+    >
+
+      <button
+        class="primary"
+        id="signInButton"
+      >
+        Sign in
+      </button>
+
+      <button
+        class="secondary"
+        id="signUpButton"
+      >
+        Sign up
+      </button>
+
+    </div>
+
+    <button
+      class="secondary"
+      id="googleButton"
+      style="
+        width:100%;
+        margin-top:8px;
+        padding:12px;
+        border:0;
+        border-radius:13px;
+        cursor:pointer;
+        font-weight:650;
+      "
+    >
+      Continue with Google
+    </button>
+
+  </div>
+
+
+  <div id="accountLoggedIn" style="display:none;">
+
+    <div
+      style="
+        padding:16px;
+        border-radius:17px;
+        background:rgba(0,0,0,.05);
+      "
+    >
+
+      <div
+        style="
+          font-size:12px;
+          opacity:.5;
+          margin-bottom:5px;
+        "
+      >
+        Signed in as
+      </div>
+
+      <div
+        id="accountEmail"
+        style="font-weight:700;word-break:break-word;"
+      ></div>
+
+    </div>
+
+    <button
+      class="secondary"
+      id="signOutButton"
+      style="
+        width:100%;
+        margin-top:12px;
+        padding:13px;
+        border:0;
+        border-radius:14px;
+        cursor:pointer;
+        font-weight:650;
+      "
+    >
+      Sign out
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- =========================
+     BOTTOM NAV
+========================= -->
+
+<nav class="bottomNav">
+
+  <button id="friendsNav">
+
+    <span class="navIcon">
+      ♧
+    </span>
+
+    <span class="navLabel">
+      Friends
+    </span>
+
+  </button>
+
+
+  <button id="wallsNav">
+
+    <span class="navIcon">
+      ▦
+    </span>
+
+    <span class="navLabel">
+      Walls
+    </span>
+
+  </button>
+
+
+  <button id="customizeNav">
+
+    <span class="navIcon">
+      ✦
+    </span>
+
+    <span class="navLabel">
+      Customize
+    </span>
+
+  </button>
+
+</nav>
 
 
 <script>
-
 /* =========================================================
-   MEMORY WALL
-
-   Uses IndexedDB instead of localStorage.
-
-   This allows MUCH larger collections of photos.
+   SUPABASE
 ========================================================= */
 
-const DB_NAME =
-    "MemoryWallDatabase";
+const SUPABASE_URL =
+  "https://qbcvyoypavjibhbexspy.supabase.co";
 
-const DB_VERSION = 1;
+const SUPABASE_KEY =
+  "sb_publishable_YNSQ8QospKozhxW8IB9h4w_4LWtHpLG";
 
-const STORE_NAME =
-    "photos";
-
-let db;
+const supabaseClient =
+  supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
 
 /* =========================================================
-   OPEN DATABASE
+   DOM
 ========================================================= */
-
-function openDatabase(){
-
-    return new Promise(
-        (resolve,reject)=>{
-
-            const request =
-                indexedDB.open(
-                    DB_NAME,
-                    DB_VERSION
-                );
-
-
-            request.onupgradeneeded =
-                event => {
-
-                    const database =
-                        event.target.result;
-
-                    if(
-                        !database.objectStoreNames
-                        .contains(STORE_NAME)
-                    ){
-
-                        const store =
-                            database.createObjectStore(
-                                STORE_NAME,
-                                {
-                                    keyPath:"id",
-                                    autoIncrement:true
-                                }
-                            );
-
-                        store.createIndex(
-                            "added",
-                            "added",
-                            {
-                                unique:false
-                            }
-                        );
-
-                    }
-
-                };
-
-
-            request.onsuccess =
-                event => {
-
-                    db =
-                        event.target.result;
-
-                    resolve(db);
-
-                };
-
-
-            request.onerror =
-                () => {
-
-                    reject(
-                        request.error
-                    );
-
-                };
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SAVE PHOTO
-========================================================= */
-
-function savePhoto(photo){
-
-    return new Promise(
-        (resolve,reject)=>{
-
-            const transaction =
-                db.transaction(
-                    STORE_NAME,
-                    "readwrite"
-                );
-
-            const store =
-                transaction.objectStore(
-                    STORE_NAME
-                );
-
-            const request =
-                store.add(photo);
-
-            request.onsuccess =
-                () => {
-
-                    resolve(
-                        request.result
-                    );
-
-                };
-
-            request.onerror =
-                () => {
-
-                    reject(
-                        request.error
-                    );
-
-                };
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   GET ALL PHOTOS
-========================================================= */
-
-function getAllPhotos(){
-
-    return new Promise(
-        (resolve,reject)=>{
-
-            const transaction =
-                db.transaction(
-                    STORE_NAME,
-                    "readonly"
-                );
-
-            const store =
-                transaction.objectStore(
-                    STORE_NAME
-                );
-
-            const request =
-                store.getAll();
-
-            request.onsuccess =
-                () => {
-
-                    const photos =
-                        request.result;
-
-                    /*
-                       Newest photos first.
-                    */
-
-                    photos.sort(
-                        (a,b) =>
-                            b.added -
-                            a.added
-                    );
-
-                    resolve(
-                        photos
-                    );
-
-                };
-
-            request.onerror =
-                () => {
-
-                    reject(
-                        request.error
-                    );
-
-                };
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   DELETE PHOTO
-========================================================= */
-
-function deletePhoto(id){
-
-    return new Promise(
-        (resolve,reject)=>{
-
-            const transaction =
-                db.transaction(
-                    STORE_NAME,
-                    "readwrite"
-                );
-
-            const store =
-                transaction.objectStore(
-                    STORE_NAME
-                );
-
-            const request =
-                store.delete(id);
-
-            request.onsuccess =
-                () => resolve();
-
-            request.onerror =
-                () =>
-                    reject(
-                        request.error
-                    );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   READ EXIF DATE
-=========================================================
-
-   This reads the common JPEG EXIF
-   DateTimeOriginal field.
-
-   Example:
-
-   2026:09:25 19:42:12
-
-========================================================= */
-
-async function getPhotoDate(file){
-
-    try {
-
-        if(
-            file.type !== "image/jpeg" &&
-            file.type !== "image/jpg"
-        ){
-
-            /*
-               Some browsers expose the
-               file's last modified date.
-
-               This is NOT necessarily when
-               the photo was taken.
-            */
-
-            if(file.lastModified){
-
-                return {
-                    date:
-                        new Date(
-                            file.lastModified
-                        ),
-
-                    source:
-                        "File date"
-                };
-
-            }
-
-            return {
-                date:null,
-                source:"Unavailable"
-            };
-
-        }
-
-
-        const buffer =
-            await file.arrayBuffer();
-
-        const view =
-            new DataView(buffer);
-
-
-        /*
-           JPEG starts with FF D8
-        */
-
-        if(
-            view.getUint16(0) !== 0xFFD8
-        ){
-
-            return {
-                date:null,
-                source:"Unavailable"
-            };
-
-        }
-
-
-        let offset=2;
-
-
-        while(
-            offset <
-            view.byteLength
-        ){
-
-            if(
-                view.getUint8(offset) !==
-                0xFF
-            ){
-
-                break;
-
-            }
-
-
-            const marker =
-                view.getUint8(
-                    offset+1
-                );
-
-
-            /*
-               Start of Scan.
-            */
-
-            if(marker===0xDA)
-                break;
-
-
-            const length =
-                view.getUint16(
-                    offset+2
-                );
-
-
-            /*
-               APP1 = EXIF
-            */
-
-            if(marker===0xE1){
-
-                const exifStart =
-                    offset+4;
-
-                const exifHeader =
-                    String.fromCharCode(
-                        view.getUint8(
-                            exifStart
-                        ),
-                        view.getUint8(
-                            exifStart+1
-                        ),
-                        view.getUint8(
-                            exifStart+2
-                        ),
-                        view.getUint8(
-                            exifStart+3
-                        )
-                    );
-
-
-                if(
-                    exifHeader === "Exif"
-                ){
-
-                    const tiff =
-                        exifStart+6;
-
-                    return readExifDate(
-                        view,
-                        tiff
-                    );
-
-                }
-
-            }
-
-
-            offset +=
-                2 + length;
-
-        }
-
-
-    } catch(error){
-
-        console.log(
-            "Could not read EXIF:",
-            error
-        );
-
-    }
-
-
-    /*
-       Fallback.
-    */
-
-    if(file.lastModified){
-
-        return {
-
-            date:
-                new Date(
-                    file.lastModified
-                ),
-
-            source:
-                "File date"
-
-        };
-
-    }
-
-
-    return {
-
-        date:null,
-
-        source:
-            "Unavailable"
-
-    };
-
-}
-
-
-/* =========================================================
-   EXIF PARSER
-========================================================= */
-
-function readExifDate(
-    view,
-    tiff
-){
-
-    try {
-
-        const byteOrder =
-            String.fromCharCode(
-                view.getUint8(tiff),
-                view.getUint8(tiff+1)
-            );
-
-
-        const little =
-            byteOrder === "II";
-
-
-        const get16 =
-            offset =>
-                view.getUint16(
-                    offset,
-                    little
-                );
-
-
-        const get32 =
-            offset =>
-                view.getUint32(
-                    offset,
-                    little
-                );
-
-
-        const ifdOffset =
-            tiff +
-            get32(tiff+4);
-
-
-        const count =
-            get16(ifdOffset);
-
-
-        for(
-            let i=0;
-            i<count;
-            i++
-        ){
-
-            const entry =
-                ifdOffset +
-                2 +
-                i*12;
-
-
-            const tag =
-                get16(entry);
-
-
-            /*
-               DateTimeOriginal
-               = 0x9003
-            */
-
-            if(tag===0x9003){
-
-                const type =
-                    get16(entry+2);
-
-                const countValue =
-                    get32(entry+4);
-
-
-                let dataOffset;
-
-
-                if(type===2){
-
-                    if(countValue<=4){
-
-                        dataOffset =
-                            entry+8;
-
-                    }
-                    else{
-
-                        dataOffset =
-                            tiff+
-                            get32(entry+8);
-
-                    }
-
-
-                    let text="";
-
-
-                    for(
-                        let j=0;
-                        j<countValue;
-                        j++
-                    ){
-
-                        text +=
-                            String.fromCharCode(
-                                view.getUint8(
-                                    dataOffset+j
-                                )
-                            );
-
-                    }
-
-
-                    text =
-                        text.trim()
-                        .replace(
-                            /^(\d{4}):(\d{2}):(\d{2})/,
-                            "$1-$2-$3"
-                        );
-
-
-                    const date =
-                        new Date(
-                            text.replace(
-                                " ",
-                                "T"
-                            )
-                        );
-
-
-                    if(
-                        !isNaN(
-                            date.getTime()
-                        )
-                    ){
-
-                        return {
-
-                            date:date,
-
-                            source:
-                                "Photo metadata"
-
-                        };
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-    catch(error){
-
-        console.log(
-            "EXIF parsing failed",
-            error
-        );
-
-    }
-
-
-    return {
-
-        date:null,
-
-        source:
-            "Unavailable"
-
-    };
-
-}
-
-
-/* =========================================================
-   FORMAT DATE
-========================================================= */
-
-function formatDate(date){
-
-    if(!date)
-        return "Date unavailable";
-
-
-    return new Intl.DateTimeFormat(
-        undefined,
-        {
-            year:"numeric",
-            month:"long",
-            day:"numeric",
-            hour:"numeric",
-            minute:"2-digit"
-        }
-    ).format(date);
-
-}
-
-
-/* =========================================================
-   UI ELEMENTS
-========================================================= */
-
-const fileInput =
-    document.getElementById(
-        "fileInput"
-    );
-
-const addButton =
-    document.getElementById(
-        "addButton"
-    );
-
-const dropArea =
-    document.getElementById(
-        "dropArea"
-    );
 
 const gallery =
-    document.getElementById(
-        "gallery"
-    );
+  document.getElementById("gallery");
 
 const emptyState =
-    document.getElementById(
-        "emptyState"
-    );
+  document.getElementById("emptyState");
 
-const photoCount =
-    document.getElementById(
-        "photoCount"
-    );
+const fileInput =
+  document.getElementById("fileInput");
 
-const modal =
-    document.getElementById(
-        "modal"
-    );
+const addPhotosButton =
+  document.getElementById("addPhotosButton");
 
-const modalImage =
-    document.getElementById(
-        "modalImage"
-    );
-
-const modalDate =
-    document.getElementById(
-        "modalDate"
-    );
-
-const modalName =
-    document.getElementById(
-        "modalName"
-    );
-
-const closeModal =
-    document.getElementById(
-        "closeModal"
-    );
+const dropArea =
+  document.getElementById("dropArea");
 
 const toast =
-    document.getElementById(
-        "toast"
-    );
+  document.getElementById("toast");
+
+const photoModal =
+  document.getElementById("photoModal");
+
+const modalImage =
+  document.getElementById("modalImage");
+
+const modalClose =
+  document.getElementById("modalClose");
+
+const accountButton =
+  document.getElementById("accountButton");
 
 
 /* =========================================================
-   ADD PHOTOS BUTTON
+   CURRENT APP STATE
 ========================================================= */
 
-addButton.addEventListener(
-    "click",
-    () => {
-
-        fileInput.click();
-
-    }
-);
-
-
-/* =========================================================
-   FILE INPUT
-========================================================= */
-
-fileInput.addEventListener(
-    "change",
-    async event => {
-
-        await handleFiles(
-            event.target.files
-        );
-
-        /*
-           Allows selecting the
-           same photo again later.
-        */
-
-        fileInput.value="";
-
-    }
-);
-
-
-/* =========================================================
-   DRAG AND DROP
-========================================================= */
-
-[
-    "dragenter",
-    "dragover"
-].forEach(
-    eventName => {
-
-        dropArea.addEventListener(
-            eventName,
-            event => {
-
-                event.preventDefault();
-
-                dropArea.classList.add(
-                    "dragging"
-                );
-
-            }
-        );
-
-    }
-);
-
-
-[
-    "dragleave",
-    "drop"
-].forEach(
-    eventName => {
-
-        dropArea.addEventListener(
-            eventName,
-            event => {
-
-                event.preventDefault();
-
-                dropArea.classList.remove(
-                    "dragging"
-                );
-
-            }
-        );
-
-    }
-);
-
-
-dropArea.addEventListener(
-    "drop",
-    async event => {
-
-        await handleFiles(
-            event.dataTransfer.files
-        );
-
-    }
-);
-
-
-/* =========================================================
-   HANDLE FILES
-========================================================= */
-
-async function handleFiles(files){
-
-    const images =
-        Array.from(files)
-        .filter(
-            file =>
-                file.type.startsWith(
-                    "image/"
-                )
-        );
-
-
-    if(images.length===0){
-
-        showToast(
-            "No image files found."
-        );
-
-        return;
-
-    }
-
-
-    showToast(
-        `Adding ${images.length} photo${
-            images.length===1 ? "" : "s"
-        }...`
-    );
-
-
-    for(
-        const file of images
-    ){
-
-        try {
-
-            const info =
-                await getPhotoDate(
-                    file
-                );
-
-
-            const photo = {
-
-                name:
-                    file.name,
-
-                type:
-                    file.type,
-
-                blob:
-                    file,
-
-                taken:
-                    info.date
-                    ? info.date.getTime()
-                    : null,
-
-                dateSource:
-                    info.source,
-
-                added:
-                    Date.now()
-
-            };
-
-
-            await savePhoto(
-                photo
-            );
-
-        }
-        catch(error){
-
-            console.error(
-                error
-            );
-
-        }
-
-    }
-
-
-    await renderGallery();
-
-
-    showToast(
-        `${images.length} photo${
-            images.length===1 ? "" : "s"
-        } added`
-    );
-
-}
-
-
-/* =========================================================
-   RENDER GALLERY
-========================================================= */
-
-async function renderGallery(){
-
-    const photos =
-        await getAllPhotos();
-
-
-    gallery.innerHTML="";
-
-
-    photoCount.textContent =
-        `${photos.length} photo${
-            photos.length===1
-            ? ""
-            : "s"
-        }`;
-
-
-    if(photos.length===0){
-
-        emptyState.style.display =
-            "block";
-
-        return;
-
-    }
-
-
-    emptyState.style.display =
-        "none";
-
-
-    /*
-       Newest at top.
-
-       Older photos remain farther
-       down the page.
-    */
-
-    for(
-        const photo of photos
-    ){
-
-        createPhotoCard(
-            photo
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   CREATE PHOTO CARD
-========================================================= */
-
-function createPhotoCard(photo){
-
-    const card =
-        document.createElement(
-            "div"
-        );
-
-    card.className =
-        "photoCard";
-
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-    image.loading =
-        "lazy";
-
-    image.alt =
-        photo.name;
-
-
-    /*
-       Object URL lets the browser
-       display the IndexedDB blob.
-    */
-
-    const url =
-        URL.createObjectURL(
-            photo.blob
-        );
-
-    image.src =
-        url;
-
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-    info.className =
-        "photoInfo";
-
-
-    const date =
-        document.createElement(
-            "div"
-        );
-
-    date.className =
-        "photoDate";
-
-
-    const takenDate =
-        photo.taken
-        ? new Date(photo.taken)
-        : null;
-
-
-    date.textContent =
-        formatDate(
-            takenDate
-        );
-
-
-    const source =
-        document.createElement(
-            "div"
-        );
-
-    source.className =
-        "photoMeta";
-
-
-    source.textContent =
-        photo.dateSource ===
-        "Photo metadata"
-        ? "Date from photo"
-        : photo.dateSource;
-
-
-    info.appendChild(
-        date
-    );
-
-    info.appendChild(
-        source
-    );
-
-
-    /*
-       Delete button
-    */
-
-    const deleteButton =
-        document.createElement(
-            "button"
-        );
-
-    deleteButton.className =
-        "deletePhoto";
-
-    deleteButton.innerHTML =
-        "×";
-
-    deleteButton.title =
-        "Delete photo";
-
-
-    deleteButton.addEventListener(
-        "click",
-        async event => {
-
-            event.stopPropagation();
-
-
-            const confirmed =
-                confirm(
-                    "Remove this photo from your Memory Wall?"
-                );
-
-
-            if(!confirmed)
-                return;
-
-
-            await deletePhoto(
-                photo.id
-            );
-
-
-            URL.revokeObjectURL(
-                url
-            );
-
-
-            await renderGallery();
-
-        }
-    );
-
-
-    card.appendChild(
-        image
-    );
-
-    card.appendChild(
-        info
-    );
-
-    card.appendChild(
-        deleteButton
-    );
-
-
-    /*
-       Desktop hover works automatically
-       through CSS.
-
-       Clicking/tapping opens the
-       larger photo view.
-    */
-
-    card.addEventListener(
-        "click",
-        () => {
-
-            openModal(
-                photo,
-                url
-            );
-
-        }
-    );
-
-
-    gallery.appendChild(
-        card
-    );
-
-}
-
-
-/* =========================================================
-   MODAL
-========================================================= */
-
-function openModal(
-    photo,
-    url
-){
-
-    modalImage.src =
-        url;
-
-    modalImage.alt =
-        photo.name;
-
-
-    const date =
-        photo.taken
-        ? new Date(photo.taken)
-        : null;
-
-
-    modalDate.textContent =
-        formatDate(
-            date
-        );
-
-
-    modalName.textContent =
-        `${photo.name} • ${photo.dateSource}`;
-
-
-    modal.classList.add(
-        "open"
-    );
-
-}
-
-
-function closePhotoModal(){
-
-    modal.classList.remove(
-        "open"
-    );
-
-    modalImage.src =
-        "";
-
-}
-
-
-closeModal.addEventListener(
-    "click",
-    closePhotoModal
-);
-
-
-modal.addEventListener(
-    "click",
-    event => {
-
-        if(
-            event.target ===
-            modal
-        ){
-
-            closePhotoModal();
-
-        }
-
-    }
-);
-
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if(
-            event.key === "Escape"
-        ){
-
-            closePhotoModal();
-
-        }
-
-    }
-);
+let currentUser = null;
+let currentWall = null;
+let currentWalls = [];
+
+let editingWallId = null;
 
 
 /* =========================================================
@@ -2030,323 +1601,2765 @@ document.addEventListener(
 
 let toastTimer;
 
-function showToast(message){
+function showToast(message) {
 
-    toast.textContent =
-        message;
+  toast.textContent = message;
 
-    toast.classList.add(
-        "show"
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+
+    toast.classList.remove("show");
+
+  }, 2500);
+}
+
+
+/* =========================================================
+   SHEETS
+========================================================= */
+
+const sheets = {
+  friends: document.getElementById("friendsSheet"),
+  walls: document.getElementById("wallsSheet"),
+  customize: document.getElementById("customizeSheet"),
+  rename: document.getElementById("renameSheet"),
+  account: document.getElementById("accountSheet")
+};
+
+const overlay =
+  document.getElementById("sheetOverlay");
+
+
+function closeSheets() {
+
+  Object.values(sheets).forEach(sheet => {
+    sheet.classList.remove("show");
+  });
+
+  overlay.classList.remove("show");
+
+  document
+    .querySelectorAll(".bottomNav button")
+    .forEach(button => {
+      button.classList.remove("active");
+    });
+}
+
+
+function openSheet(name) {
+
+  closeSheets();
+
+  sheets[name].classList.add("show");
+
+  overlay.classList.add("show");
+
+  const navButton = {
+    friends: document.getElementById("friendsNav"),
+    walls: document.getElementById("wallsNav"),
+    customize: document.getElementById("customizeNav")
+  }[name];
+
+  if (navButton) {
+    navButton.classList.add("active");
+  }
+}
+
+
+overlay.addEventListener(
+  "click",
+  closeSheets
+);
+
+
+document
+  .querySelectorAll("[data-close]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      closeSheets
     );
 
-
-    clearTimeout(
-        toastTimer
-    );
+  });
 
 
-    toastTimer =
-        setTimeout(
-            () => {
+document
+  .getElementById("friendsNav")
+  .addEventListener("click", async () => {
 
-                toast.classList.remove(
-                    "show"
-                );
+    if (!currentUser) {
+      showToast("Sign in first.");
+      openSheet("account");
+      return;
+    }
 
-            },
-            2500
+    await loadFriends();
+
+    openSheet("friends");
+
+  });
+
+
+document
+  .getElementById("wallsNav")
+  .addEventListener("click", async () => {
+
+    if (!currentUser) {
+      showToast("Sign in first.");
+      openSheet("account");
+      return;
+    }
+
+    await loadWalls();
+
+    openSheet("walls");
+
+  });
+
+
+document
+  .getElementById("customizeNav")
+  .addEventListener("click", async () => {
+
+    if (!currentWall) {
+      showToast("Create a wall first.");
+      openSheet("walls");
+      return;
+    }
+
+    loadCustomizeValues();
+
+    openSheet("customize");
+
+  });
+
+
+accountButton.addEventListener(
+  "click",
+  () => openSheet("account")
+);
+
+
+/* =========================================================
+   INDEXED DB
+========================================================= */
+
+const DB_NAME =
+  "MemoryWallDatabase";
+
+const DB_VERSION = 1;
+
+const STORE_NAME =
+  "photos";
+
+
+function openDatabase() {
+
+  return new Promise((resolve, reject) => {
+
+    const request =
+      indexedDB.open(
+        DB_NAME,
+        DB_VERSION
+      );
+
+    request.onupgradeneeded =
+      event => {
+
+        const db =
+          event.target.result;
+
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+
+          db.createObjectStore(
+            STORE_NAME,
+            {
+              keyPath: "id"
+            }
+          );
+
+        }
+
+      };
+
+    request.onsuccess =
+      event => resolve(event.target.result);
+
+    request.onerror =
+      () => reject(request.error);
+
+  });
+
+}
+
+
+async function savePhoto(photo) {
+
+  const db =
+    await openDatabase();
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          "readwrite"
         );
+
+      transaction
+        .objectStore(STORE_NAME)
+        .put(photo);
+
+      transaction.oncomplete =
+        resolve;
+
+      transaction.onerror =
+        () => reject(transaction.error);
+
+    }
+  );
+
+}
+
+
+async function getAllPhotos() {
+
+  const db =
+    await openDatabase();
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const request =
+        db
+          .transaction(
+            STORE_NAME,
+            "readonly"
+          )
+          .objectStore(STORE_NAME)
+          .getAll();
+
+      request.onsuccess =
+        () => resolve(request.result);
+
+      request.onerror =
+        () => reject(request.error);
+
+    }
+  );
+
+}
+
+
+async function deletePhoto(id) {
+
+  const db =
+    await openDatabase();
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          "readwrite"
+        );
+
+      transaction
+        .objectStore(STORE_NAME)
+        .delete(id);
+
+      transaction.oncomplete =
+        resolve;
+
+      transaction.onerror =
+        () => reject(transaction.error);
+
+    }
+  );
 
 }
 
 
 /* =========================================================
-   START
+   EXIF DATE
 ========================================================= */
 
-async function start(){
+function readExifDate(buffer) {
 
-    try {
+  try {
 
-        await openDatabase();
+    const view =
+      new DataView(buffer);
 
-        await renderGallery();
-
+    if (
+      view.getUint16(0, false) !== 0xFFD8
+    ) {
+      return null;
     }
-    catch(error){
 
-        console.error(
-            error
+    let offset = 2;
+
+    while (offset < view.byteLength) {
+
+      const marker =
+        view.getUint16(offset, false);
+
+      offset += 2;
+
+      if (
+        marker === 0xFFE1
+      ) {
+
+        const length =
+          view.getUint16(offset, false);
+
+        const start =
+          offset + 2;
+
+        const exif =
+          new Uint8Array(
+            buffer,
+            start,
+            length - 2
+          );
+
+        const text =
+          new TextDecoder()
+            .decode(exif);
+
+        const match =
+          text.match(
+            /(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/
+          );
+
+        if (match) {
+
+          return new Date(
+            `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}`
+          );
+
+        }
+
+      }
+
+      offset +=
+        view.getUint16(
+          offset,
+          false
         );
 
-        showToast(
-            "Your browser could not open photo storage."
-        );
-
     }
+
+  } catch (error) {
+
+    console.warn(
+      "Could not read EXIF date",
+      error
+    );
+
+  }
+
+  return null;
+}
+
+
+async function getPhotoDate(file) {
+
+  if (
+    !file.type.includes("jpeg") &&
+    !file.type.includes("jpg")
+  ) {
+    return file.lastModified
+      ? new Date(file.lastModified)
+      : new Date();
+  }
+
+  try {
+
+    const buffer =
+      await file.arrayBuffer();
+
+    return (
+      readExifDate(buffer) ||
+      (
+        file.lastModified
+          ? new Date(file.lastModified)
+          : new Date()
+      )
+    );
+
+  } catch {
+
+    return new Date();
+
+  }
 
 }
 
-start();
 
-</script>
+function formatDate(date) {
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://qbcvyoypavjibhbexspy.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_YNSQ8QospKozhxW8IB9h4w_4LWtHpLG";
+  if (!date) return "";
 
- const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+  return new Intl.DateTimeFormat(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }
+  ).format(date);
+
+}
+
+
+/* =========================================================
+   PHOTOS
+========================================================= */
+
+async function handleFiles(files) {
+
+  const imageFiles =
+    Array.from(files)
+      .filter(file =>
+        file.type.startsWith("image/")
+      );
+
+  if (!imageFiles.length) {
+
+    showToast(
+      "Please choose image files."
+    );
+
+    return;
+  }
+
+
+  for (const file of imageFiles) {
+
+    const date =
+      await getPhotoDate(file);
+
+    const photo = {
+
+      id:
+        crypto.randomUUID(),
+
+      blob:
+        file,
+
+      name:
+        file.name,
+
+      date:
+        date?.toISOString() ||
+        new Date().toISOString(),
+
+      createdAt:
+        new Date().toISOString()
+
+    };
+
+    await savePhoto(photo);
+
+  }
+
+  await renderGallery();
+
+  showToast(
+    `${imageFiles.length} photo${imageFiles.length === 1 ? "" : "s"} added`
   );
 
-  supabaseClient
-    .from("profiles")
-    .select("id")
-    .limit(1)
-    .then(({ data, error }) => {
-      if (error) {
-        console.error("Supabase connection error:", error);
-      } else {
-        console.log("Supabase connected successfully!");
-      }
-    });
-</script>
-
-<script>
-  // =========================
-  // MEMORY WALL ACCOUNT SYSTEM
-  // =========================
-
-  const accountBox = document.createElement("div");
-
-  accountBox.innerHTML = `
-    <div id="accountContainer" style="
-      position: fixed;
-      top: 25px;
-      left: 55%;
-      transform: translateX(-50%);
-      z-index: 99999;
-      font-family: Arial, sans-serif;
-    ">
-
-      <button id="accountToggle" style="
-        background: white;
-        border: none;
-        border-radius: 30px;
-        padding: 12px 22px;
-        font-size: 15px;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.18);
-        transition: all 0.25s ease;
-      ">
-        Sign in
-      </button>
-
-      <div id="accountPanel" style="
-        width: 280px;
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        margin-top: 10px;
-        background: white;
-        border-radius: 18px;
-        padding: 0 20px;
-        box-sizing: border-box;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-        transition:
-          max-height 0.45s ease,
-          opacity 0.3s ease,
-          padding 0.45s ease;
-      ">
-
-        <h2 style="margin: 20px 0 15px;">
-          Memory Wall
-        </h2>
-
-        <input
-          id="accountEmail"
-          type="email"
-          placeholder="Email"
-          style="
-            width:100%;
-            padding:10px;
-            margin-bottom:8px;
-            box-sizing:border-box;
-            border:1px solid #ddd;
-            border-radius:8px;
-          "
-        >
-
-        <input
-          id="accountPassword"
-          type="password"
-          placeholder="Password"
-          style="
-            width:100%;
-            padding:10px;
-            margin-bottom:10px;
-            box-sizing:border-box;
-            border:1px solid #ddd;
-            border-radius:8px;
-          "
-        >
-
-        <button
-          id="signUpButton"
-          style="
-            width:100%;
-            padding:10px;
-            margin-bottom:6px;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-          "
-        >
-          Create account
-        </button>
-
-        <button
-          id="signInButton"
-          style="
-            width:100%;
-            padding:10px;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-          "
-        >
-          Sign in
-        </button>
-
-        <p
-          id="accountMessage"
-          style="
-            font-size:14px;
-            padding-bottom:15px;
-          "
-        ></p>
-
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(accountBox);
+}
 
 
-  // OPEN / CLOSE ACCOUNT BOX
+async function renderGallery() {
 
-  const accountToggle =
-    document.getElementById("accountToggle");
+  const photos =
+    await getAllPhotos();
 
-  const accountPanel =
-    document.getElementById("accountPanel");
+  gallery.innerHTML = "";
 
-  let accountOpen = false;
-
-  accountToggle.onclick = () => {
-
-    accountOpen = !accountOpen;
-
-    if (accountOpen) {
-
-      accountPanel.style.maxHeight = "500px";
-      accountPanel.style.opacity = "1";
-      accountPanel.style.padding = "0 20px";
-
-      accountToggle.textContent = "Close";
-
-    } else {
-
-      accountPanel.style.maxHeight = "0";
-      accountPanel.style.opacity = "0";
-      accountPanel.style.padding = "0 20px";
-
-      accountToggle.textContent = "Sign in";
-    }
-  };
+  photos.sort(
+    (a,b) =>
+      new Date(b.date) -
+      new Date(a.date)
+  );
 
 
-  // CREATE ACCOUNT
-
-  document.getElementById("signUpButton").onclick = async () => {
-
-    const email =
-      document.getElementById("accountEmail").value;
-
-    const password =
-      document.getElementById("accountPassword").value;
-
-    const message =
-      document.getElementById("accountMessage");
-
-    if (!email || !password) {
-      message.textContent =
-        "Enter an email and password.";
-      return;
-    }
-
-    const { data, error } =
-      await supabaseClient.auth.signUp({
-        email: email,
-        password: password
-      });
-
-    if (error) {
-      console.error(error);
-      message.textContent = error.message;
-      return;
-    }
-
-    message.textContent =
-      "Account created! Check your email if confirmation is required.";
-  };
+  emptyState.style.display =
+    photos.length
+      ? "none"
+      : "block";
 
 
-  // SIGN IN
+  for (const photo of photos) {
 
-  document.getElementById("signInButton").onclick = async () => {
+    const card =
+      createPhotoCard(photo);
 
-    const email =
-      document.getElementById("accountEmail").value;
+    gallery.appendChild(card);
 
-    const password =
-      document.getElementById("accountPassword").value;
-
-    const message =
-      document.getElementById("accountMessage");
-
-    if (!email || !password) {
-      message.textContent =
-        "Enter an email and password.";
-      return;
-    }
-
-    const { data, error } =
-      await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
-    if (error) {
-      console.error(error);
-      message.textContent = error.message;
-      return;
-    }
-
-    message.textContent =
-      "Signed in successfully!";
-
-    console.log(
-      "Signed-in user:",
-      data.user
-    );
-  };supabaseClient.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
-    document.getElementById("accountMessage").textContent =
-      "Already signed in!";
   }
-});
+
+}
+
+
+function createPhotoCard(photo) {
+
+  const card =
+    document.createElement("div");
+
+  card.className =
+    "photoCard";
+
+
+  const image =
+    document.createElement("img");
+
+  const url =
+    URL.createObjectURL(photo.blob);
+
+  image.src = url;
+
+  image.loading = "lazy";
+
+
+  const info =
+    document.createElement("div");
+
+  info.className =
+    "photoInfo";
+
+
+  const date =
+    document.createElement("div");
+
+  date.className =
+    "photoDate";
+
+  date.textContent =
+    formatDate(
+      new Date(photo.date)
+    );
+
+
+  const deleteButton =
+    document.createElement("button");
+
+  deleteButton.className =
+    "deletePhoto";
+
+  deleteButton.textContent =
+    "×";
+
+  deleteButton.title =
+    "Delete photo";
+
+
+  deleteButton.addEventListener(
+    "click",
+    async event => {
+
+      event.stopPropagation();
+
+      await deletePhoto(
+        photo.id
+      );
+
+      URL.revokeObjectURL(url);
+
+      await renderGallery();
+
+      showToast(
+        "Photo deleted"
+      );
+
+    }
+  );
+
+
+  card.appendChild(image);
+
+  info.appendChild(date);
+
+  card.appendChild(info);
+
+  card.appendChild(deleteButton);
+
+
+  card.addEventListener(
+    "click",
+    () => {
+
+      modalImage.src = url;
+
+      photoModal.classList.add(
+        "show"
+      );
+
+    }
+  );
+
+
+  return card;
+
+}
+
+
+/* =========================================================
+   PHOTO CONTROLS
+========================================================= */
+
+addPhotosButton.addEventListener(
+  "click",
+  () => fileInput.click()
+);
+
+
+fileInput.addEventListener(
+  "change",
+  async () => {
+
+    await handleFiles(
+      fileInput.files
+    );
+
+    fileInput.value = "";
+
+  }
+);
+
+
+["dragenter","dragover"].forEach(
+  eventName => {
+
+    dropArea.addEventListener(
+      eventName,
+      event => {
+
+        event.preventDefault();
+
+        dropArea.classList.add(
+          "dragging"
+        );
+
+      }
+    );
+
+  }
+);
+
+
+["dragleave","drop"].forEach(
+  eventName => {
+
+    dropArea.addEventListener(
+      eventName,
+      event => {
+
+        event.preventDefault();
+
+        dropArea.classList.remove(
+          "dragging"
+        );
+
+      }
+    );
+
+  }
+);
+
+
+dropArea.addEventListener(
+  "drop",
+  async event => {
+
+    await handleFiles(
+      event.dataTransfer.files
+    );
+
+  }
+);
+
+
+modalClose.addEventListener(
+  "click",
+  () => {
+
+    photoModal.classList.remove(
+      "show"
+    );
+
+    modalImage.src = "";
+
+  }
+);
+
+
+photoModal.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target === photoModal
+    ) {
+
+      photoModal.classList.remove(
+        "show"
+      );
+
+      modalImage.src = "";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SUPABASE AUTH
+========================================================= */
+
+async function getSession() {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .auth
+      .getSession();
+
+  if (error) {
+
+    console.error(error);
+
+    return null;
+
+  }
+
+  return data.session;
+
+}
+
+
+async function updateAuthUI() {
+
+  const session =
+    await getSession();
+
+  currentUser =
+    session?.user || null;
+
+
+  const loggedOut =
+    document.getElementById(
+      "accountLoggedOut"
+    );
+
+  const loggedIn =
+    document.getElementById(
+      "accountLoggedIn"
+    );
+
+
+  if (currentUser) {
+
+    loggedOut.style.display =
+      "none";
+
+    loggedIn.style.display =
+      "block";
+
+    document.getElementById(
+      "accountEmail"
+    ).textContent =
+      currentUser.email || "Signed in";
+
+    accountButton.textContent =
+      "Account";
+
+
+    await ensureProfile();
+
+    await loadWalls();
+
+  } else {
+
+    loggedOut.style.display =
+      "block";
+
+    loggedIn.style.display =
+      "none";
+
+    accountButton.textContent =
+      "Sign in";
+
+    currentWall = null;
+    currentWalls = [];
+
+  }
+
+}
+
+
+async function ensureProfile() {
+
+  if (!currentUser) return;
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select("id, username")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+
+
+  if (error) {
+
+    console.error(
+      "Profile lookup failed:",
+      error
+    );
+
+    return;
+
+  }
+
+
+  if (data) {
+
+    document.getElementById(
+      "usernameInput"
+    ).value =
+      data.username || "";
+
+  }
+
+}
+
+
+document
+  .getElementById("signUpButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const email =
+        document.getElementById(
+          "emailInput"
+        ).value.trim();
+
+      const password =
+        document.getElementById(
+          "passwordInput"
+        ).value;
+
+
+      if (!email || !password) {
+
+        showToast(
+          "Enter an email and password."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .auth
+          .signUp({
+            email,
+            password
+          });
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showToast(
+        "Account created!"
+      );
+
+    }
+  );
+
+
+document
+  .getElementById("signInButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const email =
+        document.getElementById(
+          "emailInput"
+        ).value.trim();
+
+      const password =
+        document.getElementById(
+          "passwordInput"
+        ).value;
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .auth
+          .signInWithPassword({
+            email,
+            password
+          });
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showToast(
+        "Signed in!"
+      );
+
+      closeSheets();
+
+      await updateAuthUI();
+
+    }
+  );
+
+
+document
+  .getElementById("googleButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .auth
+          .signInWithOAuth({
+            provider: "google",
+
+            options: {
+              redirectTo:
+                window.location.href
+            }
+
+          });
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+      }
+
+    }
+  );
+
+
+document
+  .getElementById("signOutButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .auth
+          .signOut();
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      currentUser = null;
+      currentWall = null;
+
+      closeSheets();
+
+      await updateAuthUI();
+
+      showToast(
+        "Signed out"
+      );
+
+    }
+  );
+
+
+supabaseClient
+  .auth
+  .onAuthStateChange(
+    async () => {
+
+      await updateAuthUI();
+
+    }
+  );
+
+
+/* =========================================================
+   USERNAME
+========================================================= */
+
+document
+  .getElementById("saveUsername")
+  .addEventListener(
+    "click",
+    async () => {
+
+      if (!currentUser) {
+
+        showToast(
+          "Sign in first."
+        );
+
+        return;
+
+      }
+
+
+      const username =
+        document
+          .getElementById(
+            "usernameInput"
+          )
+          .value
+          .trim()
+          .toLowerCase();
+
+
+      if (
+        username.length < 3
+      ) {
+
+        showToast(
+          "Username must be at least 3 characters."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("profiles")
+          .update({
+            username
+          })
+          .eq(
+            "id",
+            currentUser.id
+          );
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      showToast(
+        "Username saved!"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   FRIENDS
+========================================================= */
+
+async function loadFriends() {
+
+  if (!currentUser) return;
+
+
+  const requestsBox =
+    document.getElementById(
+      "friendRequests"
+    );
+
+  const friendsBox =
+    document.getElementById(
+      "friendsList"
+    );
+
+
+  requestsBox.innerHTML = "";
+  friendsBox.innerHTML = "";
+
+
+  const {
+    data: incoming,
+    error: incomingError
+  } =
+    await supabaseClient
+      .from("friendships")
+      .select(`
+        id,
+        requester_id,
+        status
+      `)
+      .eq(
+        "receiver_id",
+        currentUser.id
+      )
+      .eq(
+        "status",
+        "pending"
+      );
+
+
+  if (incomingError) {
+
+    requestsBox.innerHTML =
+      `<div class="friendStatus">
+        ${incomingError.message}
+      </div>`;
+
+  } else if (
+    !incoming ||
+    incoming.length === 0
+  ) {
+
+    requestsBox.innerHTML =
+      `<div class="friendStatus">
+        No friend requests.
+      </div>`;
+
+  } else {
+
+    for (const request of incoming) {
+
+      const {
+        data: profile
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select("username")
+          .eq(
+            "id",
+            request.requester_id
+          )
+          .maybeSingle();
+
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "friendItem";
+
+
+      item.innerHTML = `
+        <div>
+          <div class="friendName">
+            ${escapeHtml(
+              profile?.username ||
+              "Unknown user"
+            )}
+          </div>
+
+          <div class="friendStatus">
+            Wants to be your friend
+          </div>
+        </div>
+
+        <button class="friendAction">
+          Accept
+        </button>
+      `;
+
+
+      item
+        .querySelector(
+          ".friendAction"
+        )
+        .addEventListener(
+          "click",
+          async () => {
+
+            const {
+              error
+            } =
+              await supabaseClient
+                .from("friendships")
+                .update({
+                  status: "accepted"
+                })
+                .eq(
+                  "id",
+                  request.id
+                );
+
+
+            if (error) {
+
+              showToast(
+                error.message
+              );
+
+              return;
+
+            }
+
+
+            showToast(
+              "Friend added!"
+            );
+
+            await loadFriends();
+
+          }
+        );
+
+
+      requestsBox.appendChild(
+        item
+      );
+
+    }
+
+  }
+
+
+  const {
+    data: friendships,
+    error: friendshipError
+  } =
+    await supabaseClient
+      .from("friendships")
+      .select(`
+        requester_id,
+        receiver_id,
+        status
+      `)
+      .or(
+        `requester_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`
+      )
+      .eq(
+        "status",
+        "accepted"
+      );
+
+
+  if (friendshipError) {
+
+    friendsBox.innerHTML =
+      `<div class="friendStatus">
+        ${friendshipError.message}
+      </div>`;
+
+    return;
+
+  }
+
+
+  if (
+    !friendships ||
+    friendships.length === 0
+  ) {
+
+    friendsBox.innerHTML =
+      `<div class="friendStatus">
+        No friends yet.
+      </div>`;
+
+    return;
+
+  }
+
+
+  for (const friendship of friendships) {
+
+    const friendId =
+      friendship.requester_id === currentUser.id
+        ? friendship.receiver_id
+        : friendship.requester_id;
+
+
+    const {
+      data: profile
+    } =
+      await supabaseClient
+        .from("profiles")
+        .select("username")
+        .eq(
+          "id",
+          friendId
+        )
+        .maybeSingle();
+
+
+    const item =
+      document.createElement(
+        "div"
+      );
+
+    item.className =
+      "friendItem";
+
+
+    item.innerHTML = `
+      <div>
+        <div class="friendName">
+          ${escapeHtml(
+            profile?.username ||
+            "Unnamed friend"
+          )}
+        </div>
+
+        <div class="friendStatus">
+          Friend
+        </div>
+      </div>
+    `;
+
+
+    friendsBox.appendChild(
+      item
+    );
+
+  }
+
+}
+
+
+document
+  .getElementById("addFriendButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      if (!currentUser) {
+
+        showToast(
+          "Sign in first."
+        );
+
+        return;
+
+      }
+
+
+      const username =
+        document
+          .getElementById(
+            "friendSearch"
+          )
+          .value
+          .trim()
+          .toLowerCase();
+
+
+      if (!username) {
+
+        showToast(
+          "Enter a username."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        data: profile,
+        error: profileError
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select("id, username")
+          .eq(
+            "username",
+            username
+          )
+          .maybeSingle();
+
+
+      if (profileError) {
+
+        showToast(
+          profileError.message
+        );
+
+        return;
+
+      }
+
+
+      if (!profile) {
+
+        showToast(
+          "User not found."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        profile.id ===
+        currentUser.id
+      ) {
+
+        showToast(
+          "You can't add yourself."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        data: existing
+      } =
+        await supabaseClient
+          .from("friendships")
+          .select("id,status")
+          .or(
+            `and(requester_id.eq.${currentUser.id},receiver_id.eq.${profile.id}),and(requester_id.eq.${profile.id},receiver_id.eq.${currentUser.id})`
+          );
+
+
+      if (
+        existing &&
+        existing.length
+      ) {
+
+        showToast(
+          "You already have a request or friendship."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("friendships")
+          .insert({
+            requester_id:
+              currentUser.id,
+
+            receiver_id:
+              profile.id,
+
+            status:
+              "pending"
+          });
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      document
+        .getElementById(
+          "friendSearch"
+        )
+        .value = "";
+
+
+      showToast(
+        "Friend request sent!"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   WALLS
+========================================================= */
+
+async function loadWalls() {
+
+  if (!currentUser) return;
+
+
+  const {
+    data: walls,
+    error
+  } =
+    await supabaseClient
+      .from("walls")
+      .select(`
+        id,
+        owner_id,
+        name,
+        is_public,
+        background_color,
+        background_brightness,
+        text_color,
+        text_brightness
+      `)
+      .eq(
+        "owner_id",
+        currentUser.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(
+      "Could not load walls:",
+      error
+    );
+
+    showToast(
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  currentWalls =
+    walls || [];
+
+
+  if (!currentWalls.length) {
+
+    const {
+      data: newWall,
+      error: createError
+    } =
+      await supabaseClient
+        .from("walls")
+        .insert({
+          owner_id:
+            currentUser.id,
+
+          name:
+            "My Wall",
+
+          is_public:
+            false,
+
+          background_color:
+            "#f4f4f1",
+
+          background_brightness:
+            100,
+
+          text_color:
+            "#171717",
+
+          text_brightness:
+            100
+        })
+        .select()
+        .single();
+
+
+    if (createError) {
+
+      console.error(
+        createError
+      );
+
+      showToast(
+        createError.message
+      );
+
+      return;
+
+    }
+
+
+    currentWalls = [
+      newWall
+    ];
+
+  }
+
+
+  if (
+    !currentWall ||
+    !currentWalls.some(
+      wall =>
+        wall.id ===
+        currentWall.id
+    )
+  ) {
+
+    currentWall =
+      currentWalls[0];
+
+  }
+
+
+  applyWallTheme();
+
+  renderWallList();
+
+}
+
+
+function renderWallList() {
+
+  const wallList =
+    document.getElementById(
+      "wallList"
+    );
+
+  wallList.innerHTML = "";
+
+
+  currentWalls.forEach(
+    wall => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "wallItem" +
+        (
+          currentWall?.id === wall.id
+            ? " active"
+            : ""
+        );
+
+
+      item.innerHTML = `
+
+        <div
+          class="wallColorDot"
+          style="
+            background:${escapeAttribute(
+              wall.background_color ||
+              "#f4f4f1"
+            )};
+          "
+        ></div>
+
+        <div class="wallInfo">
+
+          <div class="wallName">
+            ${escapeHtml(
+              wall.name
+            )}
+          </div>
+
+          <div class="wallPrivacy">
+            ${wall.is_public
+              ? "Public"
+              : "Private"}
+          </div>
+
+        </div>
+
+        <button
+          class="wallEdit"
+          title="Edit wall"
+        >
+          ✎
+        </button>
+
+      `;
+
+
+      item.addEventListener(
+        "click",
+        async event => {
+
+          if (
+            event.target.closest(
+              ".wallEdit"
+            )
+          ) {
+            return;
+          }
+
+          currentWall =
+            wall;
+
+          applyWallTheme();
+
+          renderWallList();
+
+          closeSheets();
+
+          showToast(
+            `Switched to ${wall.name}`
+          );
+
+        }
+      );
+
+
+      item
+        .querySelector(
+          ".wallEdit"
+        )
+        .addEventListener(
+          "click",
+          event => {
+
+            event.stopPropagation();
+
+            openRenameSheet(
+              wall
+            );
+
+          }
+        );
+
+
+      wallList.appendChild(
+        item
+      );
+
+    }
+  );
+
+
+  const createButton =
+    document.getElementById(
+      "createWallButton"
+    );
+
+
+  createButton.disabled =
+    currentWalls.length >= 3;
+
+
+  createButton.style.opacity =
+    currentWalls.length >= 3
+      ? ".5"
+      : "1";
+
+
+  createButton.textContent =
+    currentWalls.length >= 3
+      ? "3 / 3 walls"
+      : "+ New wall";
+
+}
+
+
+document
+  .getElementById(
+    "createWallButton"
+  )
+  .addEventListener(
+    "click",
+    async () => {
+
+      if (!currentUser) {
+
+        showToast(
+          "Sign in first."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        currentWalls.length >= 3
+      ) {
+
+        showToast(
+          "You can have up to 3 walls."
+        );
+
+        return;
+
+      }
+
+
+      const wallNumber =
+        currentWalls.length + 1;
+
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient
+          .from("walls")
+          .insert({
+            owner_id:
+              currentUser.id,
+
+            name:
+              `Wall ${wallNumber}`,
+
+            is_public:
+              false,
+
+            background_color:
+              "#f4f4f1",
+
+            background_brightness:
+              100,
+
+            text_color:
+              "#171717",
+
+            text_brightness:
+              100
+          })
+          .select()
+          .single();
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      currentWalls.push(
+        data
+      );
+
+      currentWall =
+        data;
+
+
+      applyWallTheme();
+
+      renderWallList();
+
+      showToast(
+        "New wall created!"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   RENAME WALL
+========================================================= */
+
+function openRenameSheet(wall) {
+
+  editingWallId =
+    wall.id;
+
+
+  document
+    .getElementById(
+      "wallNameInput"
+    )
+    .value =
+      wall.name;
+
+
+  document
+    .getElementById(
+      "wallPublicToggle"
+    )
+    .checked =
+      !!wall.is_public;
+
+
+  openSheet("rename");
+
+}
+
+
+document
+  .getElementById(
+    "cancelWallName"
+  )
+  .addEventListener(
+    "click",
+    closeSheets
+  );
+
+
+document
+  .getElementById(
+    "saveWallName"
+  )
+  .addEventListener(
+    "click",
+    async () => {
+
+      if (!editingWallId) {
+        return;
+      }
+
+
+      const name =
+        document
+          .getElementById(
+            "wallNameInput"
+          )
+          .value
+          .trim();
+
+
+      const isPublic =
+        document
+          .getElementById(
+            "wallPublicToggle"
+          )
+          .checked;
+
+
+      if (!name) {
+
+        showToast(
+          "Enter a wall name."
+        );
+
+        return;
+
+      }
+
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient
+          .from("walls")
+          .update({
+            name,
+            is_public:
+              isPublic
+          })
+          .eq(
+            "id",
+            editingWallId
+          )
+          .select()
+          .single();
+
+
+      if (error) {
+
+        showToast(
+          error.message
+        );
+
+        return;
+
+      }
+
+
+      const index =
+        currentWalls.findIndex(
+          wall =>
+            wall.id ===
+            editingWallId
+        );
+
+
+      if (index !== -1) {
+
+        currentWalls[index] =
+          data;
+
+      }
+
+
+      if (
+        currentWall?.id ===
+        editingWallId
+      ) {
+
+        currentWall =
+          data;
+
+      }
+
+
+      renderWallList();
+
+      closeSheets();
+
+      showToast(
+        "Wall updated!"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   CUSTOMIZE
+========================================================= */
+
+function applyBrightness(
+  hex,
+  brightness
+) {
+
+  const value =
+    parseInt(
+      hex.replace("#",""),
+      16
+    );
+
+
+  let r =
+    (value >> 16) & 255;
+
+  let g =
+    (value >> 8) & 255;
+
+  let b =
+    value & 255;
+
+
+  const factor =
+    brightness / 100;
+
+
+  r =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        Math.round(r * factor)
+      )
+    );
+
+  g =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        Math.round(g * factor)
+      )
+    );
+
+  b =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        Math.round(b * factor)
+      )
+    );
+
+
+  return `rgb(${r}, ${g}, ${b})`;
+
+}
+
+
+function applyWallTheme() {
+
+  if (!currentWall) {
+    return;
+  }
+
+
+  const background =
+    applyBrightness(
+      currentWall.background_color ||
+        "#f4f4f1",
+
+      currentWall.background_brightness ||
+        100
+    );
+
+
+  const text =
+    applyBrightness(
+      currentWall.text_color ||
+        "#171717",
+
+      currentWall.text_brightness ||
+        100
+    );
+
+
+  document.documentElement.style
+    .setProperty(
+      "--wall-color",
+      background
+    );
+
+
+  document.documentElement.style
+    .setProperty(
+      "--text-color",
+      text
+    );
+
+
+  document.documentElement.style
+    .setProperty(
+      "--accent",
+      text
+    );
+
+
+  loadCustomizeValues();
+
+}
+
+
+function loadCustomizeValues() {
+
+  if (!currentWall) return;
+
+
+  const wallColor =
+    currentWall.background_color ||
+    "#f4f4f1";
+
+
+  const textColor =
+    currentWall.text_color ||
+    "#171717";
+
+
+  document
+    .getElementById(
+      "wallColorPicker"
+    )
+    .value =
+      wallColor;
+
+
+  document
+    .getElementById(
+      "wallColorValue"
+    )
+    .textContent =
+      wallColor.toUpperCase();
+
+
+  document
+    .getElementById(
+      "wallBrightness"
+    )
+    .value =
+      currentWall.background_brightness ||
+      100;
+
+
+  document
+    .getElementById(
+      "textColorPicker"
+    )
+    .value =
+      textColor;
+
+
+  document
+    .getElementById(
+      "textColorValue"
+    )
+    .textContent =
+      textColor.toUpperCase();
+
+
+  document
+    .getElementById(
+      "textBrightness"
+    )
+    .value =
+      currentWall.text_brightness ||
+      100;
+
+
+  renderRecentColors();
+
+}
+
+
+async function updateCurrentWall(changes) {
+
+  if (
+    !currentWall ||
+    !currentUser
+  ) {
+    return;
+  }
+
+
+  Object.assign(
+    currentWall,
+    changes
+  );
+
+
+  applyWallTheme();
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("walls")
+      .update(changes)
+      .eq(
+        "id",
+        currentWall.id
+      )
+      .select()
+      .single();
+
+
+  if (error) {
+
+    console.error(
+      error
+    );
+
+    showToast(
+      error.message
+    );
+
+    return;
+
+  }
+
+
+  currentWall =
+    data;
+
+
+  const index =
+    currentWalls.findIndex(
+      wall =>
+        wall.id ===
+        currentWall.id
+    );
+
+
+  if (index !== -1) {
+
+    currentWalls[index] =
+      data;
+
+  }
+
+
+  saveRecentColors();
+
+}
+
+
+document
+  .getElementById(
+    "wallColorPicker"
+  )
+  .addEventListener(
+    "input",
+    event => {
+
+      const color =
+        event.target.value;
+
+
+      document
+        .getElementById(
+          "wallColorValue"
+        )
+        .textContent =
+          color.toUpperCase();
+
+
+      currentWall.background_color =
+        color;
+
+
+      applyWallTheme();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "wallColorPicker"
+  )
+  .addEventListener(
+    "change",
+    async event => {
+
+      await updateCurrentWall({
+        background_color:
+          event.target.value
+      });
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "wallBrightness"
+  )
+  .addEventListener(
+    "input",
+    event => {
+
+      currentWall.background_brightness =
+        Number(
+          event.target.value
+        );
+
+      applyWallTheme();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "wallBrightness"
+  )
+  .addEventListener(
+    "change",
+    async event => {
+
+      await updateCurrentWall({
+        background_brightness:
+          Number(
+            event.target.value
+          )
+      });
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "textColorPicker"
+  )
+  .addEventListener(
+    "input",
+    event => {
+
+      const color =
+        event.target.value;
+
+
+      document
+        .getElementById(
+          "textColorValue"
+        )
+        .textContent =
+          color.toUpperCase();
+
+
+      currentWall.text_color =
+        color;
+
+
+      applyWallTheme();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "textColorPicker"
+  )
+  .addEventListener(
+    "change",
+    async event => {
+
+      await updateCurrentWall({
+        text_color:
+          event.target.value
+      });
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "textBrightness"
+  )
+  .addEventListener(
+    "input",
+    event => {
+
+      currentWall.text_brightness =
+        Number(
+          event.target.value
+        );
+
+      applyWallTheme();
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "textBrightness"
+  )
+  .addEventListener(
+    "change",
+    async event => {
+
+      await updateCurrentWall({
+        text_brightness:
+          Number(
+            event.target.value
+          )
+      });
+
+    }
+  );
+
+
+/* =========================================================
+   RECENT COLORS
+========================================================= */
+
+function getRecentColors(type) {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(
+        `memoryWallRecent_${type}`
+      ) || "[]"
+    );
+
+  } catch {
+
+    return [];
+
+  }
+
+}
+
+
+function setRecentColors(
+  type,
+  colors
+) {
+
+  localStorage.setItem(
+    `memoryWallRecent_${type}`,
+    JSON.stringify(
+      colors.slice(0,8)
+    )
+  );
+
+}
+
+
+function saveRecentColors() {
+
+  if (!currentWall) return;
+
+
+  const wallColors =
+    getRecentColors(
+      "wall"
+    );
+
+
+  if (
+    currentWall.background_color &&
+    !wallColors.includes(
+      currentWall.background_color
+    )
+  ) {
+
+    setRecentColors(
+      "wall",
+      [
+        currentWall.background_color,
+        ...wallColors
+      ]
+    );
+
+  }
+
+
+  const textColors =
+    getRecentColors(
+      "text"
+    );
+
+
+  if (
+    currentWall.text_color &&
+    !textColors.includes(
+      currentWall.text_color
+    )
+  ) {
+
+    setRecentColors(
+      "text",
+      [
+        currentWall.text_color,
+        ...textColors
+      ]
+    );
+
+  }
+
+
+  renderRecentColors();
+
+}
+
+
+function renderRecentColors() {
+
+  renderRecentColorGroup(
+    "wall",
+    "recentWallColors"
+  );
+
+  renderRecentColorGroup(
+    "text",
+    "recentTextColors"
+  );
+
+}
+
+
+function renderRecentColorGroup(
+  type,
+  elementId
+) {
+
+  const container =
+    document.getElementById(
+      elementId
+    );
+
+
+  container.innerHTML = "";
+
+
+  getRecentColors(type)
+    .forEach(
+      color => {
+
+        const button =
+          document.createElement(
+            "button"
+          );
+
+        button.className =
+          "recentColor";
+
+        button.style.background =
+          color;
+
+        button.title =
+          color;
+
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            if (!currentWall) {
+              return;
+            }
+
+
+            if (type === "wall") {
+
+              currentWall
+                .background_color =
+                  color;
+
+              document
+                .getElementById(
+                  "wallColorPicker"
+                )
+                .value =
+                  color;
+
+              document
+                .getElementById(
+                  "wallColorValue"
+                )
+                .textContent =
+                  color.toUpperCase();
+
+
+              applyWallTheme();
+
+
+              await updateCurrentWall({
+                background_color:
+                  color
+              });
+
+            } else {
+
+              currentWall
+                .text_color =
+                  color;
+
+              document
+                .getElementById(
+                  "textColorPicker"
+                )
+                .value =
+                  color;
+
+              document
+                .getElementById(
+                  "textColorValue"
+                )
+                .textContent =
+                  color.toUpperCase();
+
+
+              applyWallTheme();
+
+
+              await updateCurrentWall({
+                text_color:
+                  color
+              });
+
+            }
+
+          }
+        );
+
+
+        container.appendChild(
+          button
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function escapeAttribute(value) {
+
+  return escapeHtml(value);
+
+}
+
+
+/* =========================================================
+   STARTUP
+========================================================= */
+
+(async function startApp() {
+
+  await renderGallery();
+
+  await updateAuthUI();
+
+})();
 </script>
+
+</body>
+</html>

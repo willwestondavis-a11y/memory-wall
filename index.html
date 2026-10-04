@@ -32,6 +32,9 @@ body {
     margin: 0;
     overflow-x: hidden;
     min-height: 100vh;
+    min-height: 100dvh;
+    /* Prevent iOS overscroll from exposing an unstyled strip above the header. */
+    overscroll-behavior-x: none;
     background-color: var(--wall-bg, #f4f4f1);
     background-image: var(--wall-image, none);
     background-size: cover;
@@ -65,9 +68,11 @@ header {
     align-items: center;
     justify-content: space-between;
 
+    /* Keep the entire iPhone safe-area inside the colored header. */
     padding: env(safe-area-inset-top) 28px 0;
 
     background: var(--header-bg, rgba(244,244,241,.88));
+    background-clip: border-box;
 
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -527,10 +532,16 @@ button {
 @media(max-width: 700px) {
 
     header {
-        height: 65px;
+        /*
+         * iPhone Dynamic Island / notch fix:
+         * the header itself includes the safe-area, so the logo and buttons
+         * are pushed below the Dynamic Island instead of sitting underneath it.
+         */
+        min-height: calc(65px + env(safe-area-inset-top));
+        height: calc(65px + env(safe-area-inset-top));
 
         padding:
-            0 14px;
+            env(safe-area-inset-top) 14px 0;
     }
 
     .logo {

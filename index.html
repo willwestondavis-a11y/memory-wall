@@ -187,7 +187,7 @@ button {
     padding:
         10px
         0
-        100px;
+        130px;
 
     columns: 5 220px;
 
@@ -566,7 +566,7 @@ button {
 
         column-gap: 7px;
 
-        padding-bottom: 80px;
+        padding-bottom: 120px;
     }
 
     .photoCard {
@@ -615,6 +615,102 @@ button {
         columns: 2 120px;
     }
 
+}
+
+
+/* =========================
+   BOTTOM NAVIGATION
+========================= */
+
+.bottomNav {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 900;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 7px;
+
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(0,0,0,.09);
+    border-radius: 18px;
+
+    box-shadow: 0 10px 35px rgba(0,0,0,.12);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.bottomNav button {
+    min-width: 92px;
+    padding: 9px 13px;
+
+    border: 0;
+    border-radius: 13px;
+
+    background: transparent;
+    color: #555;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 650;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    transition:
+        background .18s ease,
+        color .18s ease,
+        transform .15s ease;
+}
+
+.bottomNav button:hover {
+    background: rgba(0,0,0,.06);
+    color: #171717;
+}
+
+.bottomNav button:active {
+    transform: scale(.96);
+}
+
+.bottomNav .navIcon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.bottomNav .navLabel {
+    line-height: 1;
+}
+
+@media(max-width: 700px) {
+    .bottomNav {
+        left: 12px;
+        right: 12px;
+        bottom: 10px;
+        width: auto;
+        transform: none;
+        justify-content: space-around;
+        border-radius: 17px;
+    }
+
+    .bottomNav button {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 7px;
+        font-size: 12px;
+    }
+
+    .bottomNav .navIcon {
+        font-size: 15px;
+    }
 }
 
 </style>
@@ -2088,6 +2184,34 @@ async function start(){
 }
 
 start();
+
+
+/* =========================================================
+   BOTTOM NAVIGATION
+========================================================= */
+
+const friendsNav = document.getElementById("friendsNav");
+const wallsNav = document.getElementById("wallsNav");
+const customizeNav = document.getElementById("customizeNav");
+
+if (friendsNav) {
+    friendsNav.addEventListener("click", () => {
+        showToast("Friends");
+    });
+}
+
+if (wallsNav) {
+    wallsNav.addEventListener("click", () => {
+        showToast("Walls");
+    });
+}
+
+if (customizeNav) {
+    customizeNav.addEventListener("click", () => {
+        showToast("Customize");
+    });
+}
+
 
 </script>
 

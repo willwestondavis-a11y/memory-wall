@@ -3400,15 +3400,12 @@ function renderWallList() {
     );
 
 
-  createButton.disabled =
-    currentWalls.length >= 3;
-
+  createButton.disabled = false;
 
   createButton.style.opacity =
     currentWalls.length >= 3
-      ? ".5"
+      ? ".65"
       : "1";
-
 
   createButton.textContent =
     currentWalls.length >= 3
@@ -3419,12 +3416,66 @@ function renderWallList() {
 
 
 document
-  .getElementById(
-    "createWallButton"
-  )
-  .addEventListener(
-    "click",
-    async () => {
+  .getElementById("createWallButton")
+  .addEventListener("click", async () => {
+
+    if (!currentUser) {
+      showToast("Sign in first.");
+      return;
+    }
+
+    if (currentWalls.length >= 3) {
+      showToast("You can have up to 3 walls.");
+      return;
+    }
+
+    const createButton =
+      document.getElementById("createWallButton");
+
+    createButton.disabled = true;
+    createButton.textContent = "Creating…";
+
+    const wallNumber =
+      currentWalls.length + 1;
+
+    const {
+      data,
+      error
+    } = await supabaseClient
+      .from("walls")
+      .insert({
+        owner_id: currentUser.id,
+        name: `Wall ${wallNumber}`,
+        is_public: false,
+        background_color: "#f4f4f1",
+        background_brightness: 100,
+        text_color: "#171717",
+        text_brightness: 100
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Wall creation failed:", error);
+
+      createButton.disabled = false;
+      createButton.textContent =
+        currentWalls.length >= 3
+          ? "3 / 3 walls"
+          : "+ New wall";
+
+      showToast("Couldn't create wall: " + error.message);
+      return;
+    }
+
+    currentWalls.push(data);
+    currentWall = data;
+
+    applyWallTheme();
+    renderWallList();
+
+    showToast("New wall created!");
+  });
 
       if (!currentUser) {
 

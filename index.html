@@ -745,13 +745,54 @@ button {
 .friendsEmpty span { font-size:12px; }
 
 @media(max-width:700px) {
-    header { padding-left:16px; padding-right:16px; }
-    .headerRight { gap:6px; }
-    .photoCount { display:none; }
-    .addButton { padding:10px 12px; }
-    .selectButton { padding:10px 11px; }
-    .selectionBar { left:12px; right:12px; bottom:74px; transform:translateY(20px); justify-content:space-between; }
-    .selectionBar.open { transform:translateY(0); }
+    /*
+     * iPhone Dynamic Island / status-bar fix.
+     * Some iOS PWA configurations report env(safe-area-inset-top) as 0
+     * even though the Dynamic Island is visually covering the page.
+     * Keep a guaranteed top clearance while still respecting a larger
+     * safe-area value when iOS provides one.
+     */
+    header {
+        min-height: 142px;
+        height: 142px;
+        padding:
+            max(env(safe-area-inset-top), 54px)
+            16px
+            14px;
+        align-items: flex-end;
+    }
+
+    .headerRight {
+        gap: 6px;
+    }
+
+    .logo {
+        margin-bottom: 1px;
+    }
+
+    .photoCount {
+        display: none;
+    }
+
+    .addButton {
+        padding: 10px 12px;
+    }
+
+    .selectButton {
+        padding: 10px 11px;
+    }
+
+    .selectionBar {
+        left: 12px;
+        right: 12px;
+        bottom: 74px;
+        transform: translateY(20px);
+        justify-content: space-between;
+    }
+
+    .selectionBar.open {
+        transform: translateY(0);
+    }
 }
 
 /* =========================
@@ -1035,6 +1076,14 @@ button {
 
 @media(max-width:700px) {
     .appSheet { width: 100%; max-height: 82vh; border-radius: 22px 22px 0 0; }
+}
+
+/* Keep the page behind iOS's translucent status area the same color as the header. */
+@supports (-webkit-touch-callout: none) {
+    html,
+    body {
+        background-color: var(--header-bg, #f4f4f1);
+    }
 }
 
 </style>

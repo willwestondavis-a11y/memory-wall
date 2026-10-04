@@ -5,7 +5,7 @@
 
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0,
-               maximum-scale=1.0">
+               maximum-scale=1.0, viewport-fit=cover">
 
 <!-- iPhone / iPad app mode -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,12 +25,20 @@
 
 html {
     scroll-behavior: smooth;
+    background: var(--header-bg, #f4f4f1);
 }
 
 body {
     margin: 0;
-    background: #f4f4f1;
-    color: #171717;
+    overflow-x: hidden;
+    min-height: 100vh;
+    background-color: var(--wall-bg, #f4f4f1);
+    background-image: var(--wall-image, none);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--memory-text, #171717);
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -50,15 +58,16 @@ header {
     top: 0;
     z-index: 100;
 
-    height: 76px;
+    min-height: 76px;
+    height: calc(76px + env(safe-area-inset-top));
 
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 28px;
+    padding: env(safe-area-inset-top) 28px 0;
 
-    background: rgba(244,244,241,.88);
+    background: var(--header-bg, rgba(244,244,241,.88));
 
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -618,6 +627,122 @@ button {
 }
 
 
+
+/* Dynamic customization */
+:root {
+    --wall-bg: #f4f4f1;
+    --header-bg: rgba(244,244,241,.94);
+    --nav-bg: rgba(255,255,255,.88);
+    --memory-text: #171717;
+    --drop-bg: rgba(255,255,255,.45);
+    --drop-border: rgba(23,23,23,.25);
+    --wall-image: none;
+}
+
+.selectButton {
+    border: 1px solid rgba(0,0,0,.1);
+    background: rgba(255,255,255,.45);
+    color: var(--memory-text);
+    padding: 10px 13px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.selectButton.active {
+    background: var(--memory-text);
+    color: var(--wall-bg);
+}
+
+.dropArea {
+    background: var(--drop-bg);
+    border-color: var(--drop-border);
+    color: var(--memory-text);
+}
+.dropArea.dragging {
+    border-color: var(--memory-text);
+    background: color-mix(in srgb, var(--drop-bg) 65%, white);
+}
+.dropSubtitle { color: color-mix(in srgb, var(--memory-text) 58%, transparent); }
+
+.photoCard.selected {
+    outline: 4px solid var(--memory-text);
+    outline-offset: 2px;
+}
+.photoCard.selected::after {
+    content: "✓";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--memory-text);
+    color: var(--wall-bg);
+    font-weight: 800;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2);
+}
+
+.selectionBar {
+    position: fixed;
+    left: 50%;
+    bottom: 82px;
+    z-index: 950;
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 9px 8px 14px;
+    border-radius: 16px;
+    background: var(--nav-bg);
+    color: var(--memory-text);
+    box-shadow: 0 10px 35px rgba(0,0,0,.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    transition: .2s ease;
+}
+.selectionBar.open { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.selectionBar span { font-size: 13px; font-weight: 700; margin-right: 5px; }
+.selectionBar button { border: 0; border-radius: 11px; padding: 9px 12px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; background: rgba(0,0,0,.07); color: inherit; }
+.selectionBar #deleteSelectedButton { background: #d93030; color: white; }
+
+.bottomNav { background: var(--nav-bg); color: var(--memory-text); }
+.bottomNav button { color: color-mix(in srgb, var(--memory-text) 72%, transparent); }
+.bottomNav button:hover { background: rgba(0,0,0,.07); color: var(--memory-text); }
+
+.backgroundActions { display:flex; gap:8px; }
+.secondaryAction { margin-top:0; flex:1; background:var(--memory-text); color:var(--wall-bg); }
+.clearBackgroundButton { flex:0 0 auto; border:0; border-radius:13px; padding:13px 16px; background:rgba(0,0,0,.07); color:inherit; font:inherit; font-weight:700; cursor:pointer; }
+.backgroundHint { margin-top:8px; color:#888; font-size:11px; line-height:1.4; }
+
+.friendsHero { display:flex; gap:12px; align-items:center; padding:14px; border-radius:17px; background:rgba(0,0,0,.045); }
+.friendsIcon { width:46px; height:46px; border-radius:14px; display:grid; place-items:center; background:rgba(0,0,0,.07); font-size:23px; }
+.friendsHero strong { display:block; font-size:15px; }
+.friendsHero p { margin:4px 0 0; color:#888; font-size:12px; }
+.friendSearch { margin-top:14px; display:flex; align-items:center; gap:8px; padding:11px 13px; border-radius:13px; background:rgba(0,0,0,.045); color:#999; }
+.friendSearch input { width:100%; border:0; outline:0; background:transparent; color:inherit; font:inherit; }
+.friendAddButton { margin-top:10px; }
+.friendAddButton:disabled { opacity:.55; }
+.friendsEmpty { display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; padding:34px 15px 15px; color:#777; }
+.friendsEmptyIcon { width:54px; height:54px; border-radius:18px; display:grid; place-items:center; background:rgba(0,0,0,.05); font-size:24px; margin-bottom:6px; }
+.friendsEmpty strong { color:inherit; font-size:14px; }
+.friendsEmpty span { font-size:12px; }
+
+@media(max-width:700px) {
+    header { padding-left:16px; padding-right:16px; }
+    .headerRight { gap:6px; }
+    .photoCount { display:none; }
+    .addButton { padding:10px 12px; }
+    .selectButton { padding:10px 11px; }
+    .selectionBar { left:12px; right:12px; bottom:74px; transform:translateY(20px); justify-content:space-between; }
+    .selectionBar.open { transform:translateY(0); }
+}
+
 /* =========================
    BOTTOM NAVIGATION
 ========================= */
@@ -635,7 +760,7 @@ button {
 
     padding: 7px;
 
-    background: rgba(255,255,255,.88);
+    background: var(--nav-bg);
     border: 1px solid rgba(0,0,0,.09);
     border-radius: 18px;
 
@@ -934,6 +1059,8 @@ button {
 
         </button>
 
+        <button class="selectButton" id="selectButton" type="button">Select</button>
+
     </div>
 
 </header>
@@ -948,6 +1075,13 @@ button {
     id="fileInput"
     accept="image/*"
     multiple
+    hidden
+>
+
+<input
+    type="file"
+    id="backgroundInput"
+    accept="image/*"
     hidden
 >
 
@@ -982,6 +1116,12 @@ button {
 <div
     class="gallery"
     id="gallery">
+</div>
+
+<div class="selectionBar" id="selectionBar" aria-hidden="true">
+    <span id="selectionCount">0 selected</span>
+    <button type="button" id="deleteSelectedButton">Delete</button>
+    <button type="button" id="doneSelectingButton">Done</button>
 </div>
 
 
@@ -1114,6 +1254,42 @@ button {
     <div class="customSection">
         <div class="customLabel"><span>Text brightness</span><span class="customValue" id="textBrightnessValue">100%</span></div>
         <input class="rangeInput" id="textBrightness" type="range" min="30" max="130" value="100">
+    </div>
+
+    <div class="customSection">
+        <div class="customLabel"><span>Background image</span><span class="customValue">Current wall</span></div>
+        <div class="backgroundActions">
+            <button class="newWallButton secondaryAction" type="button" id="uploadBackgroundButton">Upload image</button>
+            <button class="clearBackgroundButton" type="button" id="clearBackgroundButton">Clear</button>
+        </div>
+        <div class="backgroundHint">Your image is saved only on this device and only for this wall.</div>
+    </div>
+</section>
+
+<!-- =========================
+     FRIENDS SHEET (DESIGN ONLY)
+========================= -->
+<section class="appSheet" id="friendsSheet" aria-hidden="true">
+    <div class="sheetHandle"></div>
+    <div class="sheetHeader">
+        <div class="sheetTitle">Friends</div>
+        <button class="sheetClose" type="button" id="closeFriends">×</button>
+    </div>
+    <div class="friendsHero">
+        <div class="friendsIcon">♧</div>
+        <div>
+            <strong>Share memories with friends</strong>
+            <p>Friends and sharing will be added later.</p>
+        </div>
+    </div>
+    <div class="friendSearch fakeDisabled">
+        <span>⌕</span><input type="text" placeholder="Search for friends" disabled>
+    </div>
+    <button class="newWallButton friendAddButton" type="button" disabled>+ Add friend</button>
+    <div class="friendsEmpty">
+        <div class="friendsEmptyIcon">◎</div>
+        <strong>No friends yet</strong>
+        <span>When friends are ready, they'll appear here.</span>
     </div>
 </section>
 
@@ -2231,33 +2407,16 @@ function createPhotoCard(photo){
 
     deleteButton.addEventListener(
         "click",
-        async event => {
-
+        event => {
             event.stopPropagation();
-
-
-            const confirmed =
-                confirm(
-                    "Remove this photo from your Memory Wall?"
-                );
-
-
-            if(!confirmed)
-                return;
-
-
-            await deletePhoto(
-                photo.id
-            );
-
-
-            URL.revokeObjectURL(
-                url
-            );
-
-
-            await renderGallery();
-
+            if (selectionMode) {
+                togglePhotoSelection(photo.id, card);
+            } else {
+                selectionMode = true;
+                selectedPhotoIds.clear();
+                togglePhotoSelection(photo.id, card);
+                updateSelectionUI();
+            }
         }
     );
 
@@ -2285,13 +2444,13 @@ function createPhotoCard(photo){
 
     card.addEventListener(
         "click",
-        () => {
-
-            openModal(
-                photo,
-                url
-            );
-
+        event => {
+            if (selectionMode) {
+                togglePhotoSelection(photo.id, card);
+                return;
+            }
+            if (event.target.closest(".deletePhoto")) return;
+            openModal(photo, url);
         }
     );
 
@@ -2302,6 +2461,69 @@ function createPhotoCard(photo){
 
 }
 
+
+/* =========================================================
+   PHOTO SELECTION / DELETE
+========================================================= */
+
+let selectionMode = false;
+const selectedPhotoIds = new Set();
+const selectButton = document.getElementById("selectButton");
+const selectionBar = document.getElementById("selectionBar");
+const selectionCount = document.getElementById("selectionCount");
+const deleteSelectedButton = document.getElementById("deleteSelectedButton");
+const doneSelectingButton = document.getElementById("doneSelectingButton");
+
+function togglePhotoSelection(id, card){
+    if (selectedPhotoIds.has(id)) {
+        selectedPhotoIds.delete(id);
+        card.classList.remove("selected");
+    } else {
+        selectedPhotoIds.add(id);
+        card.classList.add("selected");
+    }
+    updateSelectionUI();
+}
+
+function updateSelectionUI(){
+    selectionCount.textContent = `${selectedPhotoIds.size} selected`;
+    selectionBar.classList.toggle("open", selectionMode);
+    selectionBar.setAttribute("aria-hidden", selectionMode ? "false" : "true");
+    selectButton.classList.toggle("active", selectionMode);
+    selectButton.textContent = selectionMode ? "Selecting" : "Select";
+}
+
+function exitSelectionMode(){
+    selectionMode = false;
+    selectedPhotoIds.clear();
+    document.querySelectorAll(".photoCard.selected").forEach(card => card.classList.remove("selected"));
+    updateSelectionUI();
+}
+
+async function deleteSelectedPhotos(){
+    const ids = Array.from(selectedPhotoIds);
+    if (!ids.length) return;
+    for (const id of ids) await deletePhoto(id);
+    exitSelectionMode();
+    await renderGallery();
+    showToast(`${ids.length} photo${ids.length === 1 ? "" : "s"} deleted`);
+}
+
+selectButton.addEventListener("click", () => {
+    if (selectionMode) exitSelectionMode();
+    else { selectionMode = true; updateSelectionUI(); }
+});
+deleteSelectedButton.addEventListener("click", deleteSelectedPhotos);
+doneSelectingButton.addEventListener("click", exitSelectionMode);
+
+document.addEventListener("keydown", async event => {
+    if ((event.key === "Delete" || event.key === "Backspace") && selectionMode && selectedPhotoIds.size) {
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        event.preventDefault();
+        await deleteSelectedPhotos();
+    }
+});
 
 /* =========================================================
    MODAL
@@ -2467,23 +2689,6 @@ const friendsNav = document.getElementById("friendsNav");
 const wallsNav = document.getElementById("wallsNav");
 const customizeNav = document.getElementById("customizeNav");
 
-if (friendsNav) {
-    friendsNav.addEventListener("click", () => {
-        showToast("Friends");
-    });
-}
-
-if (wallsNav) {
-    wallsNav.addEventListener("click", () => {
-        showToast("Walls");
-    });
-}
-
-if (customizeNav) {
-    customizeNav.addEventListener("click", () => {
-        showToast("Customize");
-    });
-}
 
 
 
@@ -2498,6 +2703,7 @@ const customizeNavButton = document.getElementById("customizeNav");
 const sheetBackdrop = document.getElementById("sheetBackdrop");
 const wallsSheet = document.getElementById("wallsSheet");
 const customizeSheet = document.getElementById("customizeSheet");
+const friendsSheet = document.getElementById("friendsSheet");
 const wallList = document.getElementById("wallList");
 const newWallButton = document.getElementById("newWallButton");
 
@@ -2511,8 +2717,10 @@ function closeSheets(){
     sheetBackdrop.classList.remove("open");
     wallsSheet.classList.remove("open");
     customizeSheet.classList.remove("open");
+    friendsSheet.classList.remove("open");
     wallsSheet.setAttribute("aria-hidden","true");
     customizeSheet.setAttribute("aria-hidden","true");
+    friendsSheet.setAttribute("aria-hidden","true");
 }
 
 function renderWallList(){
@@ -2582,9 +2790,9 @@ function wallSettingsKey(){ return "memoryWallSettings_" + currentWallId; }
 function getSettings(){
     try {
         const saved = JSON.parse(localStorage.getItem(wallSettingsKey()) || "null");
-        return Object.assign({background:"#f4f4f1", backgroundBrightness:100, text:"#171717", textBrightness:100}, saved || {});
+        return Object.assign({background:"#f4f4f1", backgroundBrightness:100, text:"#171717", textBrightness:100, backgroundImage:""}, saved || {});
     } catch(e) {
-        return {background:"#f4f4f1", backgroundBrightness:100, text:"#171717", textBrightness:100};
+        return {background:"#f4f4f1", backgroundBrightness:100, text:"#171717", textBrightness:100, backgroundImage:""};
     }
 }
 
@@ -2604,9 +2812,21 @@ function brightnessColor(hex, percent){
 
 function applyWallSettings(){
     const s = getSettings();
-    document.body.style.background = brightnessColor(s.background, s.backgroundBrightness);
-    document.body.style.color = brightnessColor(s.text, s.textBrightness);
-    document.documentElement.style.setProperty("--memory-text", brightnessColor(s.text, s.textBrightness));
+    const wallBg = brightnessColor(s.background, s.backgroundBrightness);
+    const textColor = brightnessColor(s.text, s.textBrightness);
+    const headerBg = brightnessColor(s.background, Math.max(70, Math.min(125, s.backgroundBrightness + 4)));
+    const navBg = brightnessColor(s.background, Math.max(72, Math.min(125, s.backgroundBrightness + 8)));
+    const dropBg = brightnessColor(s.background, Math.max(45, Math.min(115, s.backgroundBrightness + 5)));
+    document.documentElement.style.setProperty("--wall-bg", wallBg);
+    document.documentElement.style.setProperty("--header-bg", headerBg);
+    document.documentElement.style.setProperty("--nav-bg", navBg);
+    document.documentElement.style.setProperty("--memory-text", textColor);
+    document.documentElement.style.setProperty("--drop-bg", dropBg);
+    document.documentElement.style.setProperty("--drop-border", textColor);
+    document.documentElement.style.setProperty("--wall-image", s.backgroundImage ? `url("${s.backgroundImage}")` : "none");
+    document.documentElement.style.backgroundColor = headerBg;
+    document.body.style.color = textColor;
+
     const picker = document.getElementById("wallColorPicker");
     const wallText = document.getElementById("wallColorText");
     const textPicker = document.getElementById("textColorPicker");
@@ -2622,6 +2842,49 @@ function applyWallSettings(){
     document.getElementById("wallBrightnessValue").textContent=s.backgroundBrightness+"%";
     document.getElementById("textBrightnessValue").textContent=s.textBrightness+"%";
 }
+
+async function fileToCompressedDataURL(file){
+    return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>{
+            const img=new Image();
+            img.onload=()=>{
+                const max=1800;
+                const scale=Math.min(1,max/Math.max(img.width,img.height));
+                const canvas=document.createElement("canvas");
+                canvas.width=Math.max(1,Math.round(img.width*scale));
+                canvas.height=Math.max(1,Math.round(img.height*scale));
+                const ctx=canvas.getContext("2d");
+                ctx.drawImage(img,0,0,canvas.width,canvas.height);
+                resolve(canvas.toDataURL("image/jpeg",0.78));
+            };
+            img.onerror=reject;
+            img.src=reader.result;
+        };
+        reader.onerror=reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+const backgroundInput = document.getElementById("backgroundInput");
+const uploadBackgroundButton = document.getElementById("uploadBackgroundButton");
+const clearBackgroundButton = document.getElementById("clearBackgroundButton");
+
+uploadBackgroundButton.addEventListener("click",()=>backgroundInput.click());
+backgroundInput.addEventListener("change",async()=>{
+    const file=backgroundInput.files && backgroundInput.files[0];
+    if(!file) return;
+    try {
+        const data=await fileToCompressedDataURL(file);
+        updateSetting("backgroundImage",data);
+        showToast("Background image updated");
+    } catch(e) { console.error(e); showToast("Could not use that image"); }
+    backgroundInput.value="";
+});
+clearBackgroundButton.addEventListener("click",()=>{
+    updateSetting("backgroundImage","");
+    showToast("Background image cleared");
+});
 
 function updateSetting(name, value){
     const s=getSettings(); s[name]=value; saveSettings(s); applyWallSettings();
@@ -2646,15 +2909,19 @@ function renderRecentColors(containerId,key){
     });
 }
 
+if (friendsNav) {
+    friendsNav.addEventListener("click", () => { closeSheets(); openSheet(friendsSheet); });
+}
 if (wallsNavButton) {
-    wallsNavButton.addEventListener("click", () => { renderWallList(); openSheet(wallsSheet); });
+    wallsNavButton.addEventListener("click", () => { closeSheets(); renderWallList(); openSheet(wallsSheet); });
 }
 if (customizeNavButton) {
-    customizeNavButton.addEventListener("click", () => { applyWallSettings(); openSheet(customizeSheet); });
+    customizeNavButton.addEventListener("click", () => { closeSheets(); applyWallSettings(); openSheet(customizeSheet); });
 }
 if (newWallButton) newWallButton.addEventListener("click", createNewWall);
 document.getElementById("closeWalls").addEventListener("click",closeSheets);
 document.getElementById("closeCustomize").addEventListener("click",closeSheets);
+document.getElementById("closeFriends").addEventListener("click",closeSheets);
 sheetBackdrop.addEventListener("click",closeSheets);
 document.getElementById("wallBrightness").addEventListener("input",e=>updateSetting("backgroundBrightness",Number(e.target.value)));
 document.getElementById("textBrightness").addEventListener("input",e=>updateSetting("textBrightness",Number(e.target.value)));

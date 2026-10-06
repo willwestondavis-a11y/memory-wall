@@ -1111,6 +1111,13 @@ button {
 
 .rangeInput { width: 100%; accent-color: #171717; }
 
+
+.shareWallButton{margin-top:10px;background:#f0f0ed;color:#171717}.shareWallButton:hover{background:#e6e6e2}
+.sharePanel{display:none;margin-top:12px;padding:14px;border-radius:16px;background:rgba(0,0,0,.045)}.sharePanel.open{display:block}
+.sharePanelTitle{font-size:14px;font-weight:750;margin-bottom:8px}.sharePanelHint{font-size:12px;color:#777;line-height:1.4;margin-bottom:10px}
+.shareFriendSearch{display:flex;gap:8px;margin-bottom:10px}.shareFriendSearch input{flex:1;min-width:0;border:1px solid rgba(0,0,0,.1);border-radius:11px;padding:10px 11px;background:#fff;font:inherit}.shareFriendSearch button{border:0;border-radius:11px;padding:10px 12px;background:#171717;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.shareFriendList{display:grid;gap:7px}.shareFriendRow{display:flex;align-items:center;gap:9px;padding:9px;border-radius:12px;background:#fff}.shareFriendAvatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#e7e7e3;font-size:11px;font-weight:800;flex:none}.shareFriendMain{min-width:0;flex:1}.shareFriendMain strong{display:block;font-size:13px}.shareFriendMain small{display:block;margin-top:2px;color:#888;font-size:11px}.shareFriendAction{border:0;border-radius:10px;padding:8px 10px;background:#171717;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.shareFriendAction.remove{background:#e9e9e6;color:#333}.shareStatus{min-height:18px;margin-top:8px;font-size:12px;color:#777}.shareStatus.error{color:#c22}.shareStatus.success{color:#21864b}.sharedWallBadge{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:99px;background:#e8eef8;color:#53657d;font-size:10px;font-weight:700}.cloudPhotoCard{position:relative}.cloudPhotoCard .cloudBadge{position:absolute;top:8px;left:8px;z-index:2;padding:4px 7px;border-radius:99px;background:rgba(255,255,255,.86);backdrop-filter:blur(8px);font-size:10px;font-weight:700}.syncCloudButton{width:100%;margin-top:10px;border:0;border-radius:13px;padding:12px 14px;background:#171717;color:#fff;font:inherit;font-weight:700;cursor:pointer}.syncCloudButton:disabled{opacity:.45;cursor:default}
+
 @media(max-width:700px) {
     .appSheet { width: 100%; max-height: 82vh; border-radius: 22px 22px 0 0; }
 }
@@ -1313,6 +1320,15 @@ button {
     </div>
     <div class="wallList" id="wallList"></div>
     <button class="newWallButton" type="button" id="newWallButton">+ New wall</button>
+    <button class="newWallButton shareWallButton" type="button" id="shareWallButton">Share current wall</button>
+    <div class="sharePanel" id="sharePanel">
+        <div class="sharePanelTitle">Share “<span id="shareWallName">My Wall</span>”</div>
+        <div class="sharePanelHint">Only accepted Friends can be added. Shared photos are stored privately in your Memory Wall cloud storage.</div>
+        <div class="shareFriendSearch"><input id="shareFriendSearchInput" type="text" maxlength="20" placeholder="Friend username"><button type="button" id="shareFriendSearchButton">Search</button></div>
+        <div class="shareFriendList" id="shareFriendList"></div>
+        <div class="shareStatus" id="shareStatus"></div>
+        <button class="syncCloudButton" type="button" id="syncWallPhotosButton">Upload this wall’s photos</button>
+    </div>
 </section>
 
 <!-- =========================
@@ -2162,9 +2178,8 @@ const toast =
 addButton.addEventListener(
     "click",
     () => {
-
+        if (activeSharedWall) { showToast("Shared walls are view-only for now."); return; }
         fileInput.click();
-
     }
 );
 
@@ -2245,11 +2260,8 @@ fileInput.addEventListener(
 dropArea.addEventListener(
     "drop",
     async event => {
-
-        await handleFiles(
-            event.dataTransfer.files
-        );
-
+        if (activeSharedWall) { showToast("Shared walls are view-only for now."); return; }
+        await handleFiles(event.dataTransfer.files);
     }
 );
 
@@ -2322,7 +2334,10 @@ async function handleFiles(files){
                     info.source,
 
                 added:
-                    Date.now()
+                    Date.now(),
+
+                cloudId:
+                    (crypto.randomUUID ? crypto.randomUUID() : "photo-" + Date.now() + "-" + Math.random().toString(36).slice(2))
 
             };
 
@@ -2330,6 +2345,11 @@ async function handleFiles(files){
             await savePhoto(
                 photo
             );
+
+            if (window.syncPhotoToCloud) {
+                try { await window.syncPhotoToCloud(photo); }
+                catch (cloudError) { console.warn("Cloud photo sync skipped:", cloudError); }
+            }
 
         }
         catch(error){
@@ -2359,7 +2379,36 @@ async function handleFiles(files){
    RENDER GALLERY
 ========================================================= */
 
+let activeSharedWall = null;
+
+async function getCloudPhotoUrl(path){
+    const {data,error}=await supabaseClient.storage.from("wall-photos").createSignedUrl(path,3600);
+    if(error) throw error; return data.signedUrl;
+}
+
+async function renderCloudGallery(cloudWallId){
+    gallery.innerHTML=""; emptyState.style.display="none";
+    try{
+        const {data,error}=await supabaseClient.from("shared_wall_photos").select("id,storage_path,name,mime_type,taken,date_source,created_at").eq("wall_id",cloudWallId).order("created_at",{ascending:false});
+        if(error) throw error; const photos=data||[];
+        photoCount.textContent=`${photos.length} photo${photos.length===1?"":"s"}`;
+        if(!photos.length){emptyState.style.display="block";return;}
+        for(const photo of photos){
+            const url=await getCloudPhotoUrl(photo.storage_path);
+            const card=document.createElement("div");card.className="photoCard cloudPhotoCard";
+            const image=document.createElement("img");image.loading="lazy";image.alt=photo.name||"Shared photo";image.src=url;
+            const badge=document.createElement("div");badge.className="cloudBadge";badge.textContent="Shared";
+            const info=document.createElement("div");info.className="photoInfo";
+            const date=document.createElement("div");date.className="photoDate";date.textContent=formatDate(photo.taken?new Date(Number(photo.taken)):null);
+            const source=document.createElement("div");source.className="photoMeta";source.textContent=photo.date_source||"Shared photo";info.append(date,source);card.append(image,badge,info);
+            card.addEventListener("click",()=>openModal({name:photo.name||"Shared photo",taken:photo.taken?Number(photo.taken):null,dateSource:photo.date_source||"Shared photo"},url));gallery.appendChild(card);
+        }
+    }catch(error){console.error("Cloud gallery error:",error);showToast("Could not load the shared wall.");}
+}
+
 async function renderGallery(){
+
+    if (activeSharedWall) { await renderCloudGallery(activeSharedWall); return; }
 
     const photos =
         await getAllPhotos();
@@ -2855,6 +2904,7 @@ function renderWallList(){
         select.innerHTML = `<strong>${escapeHtml(wall.name)}</strong><small>${wall.id === currentWallId ? "Current wall" : "Tap to switch"}</small>`;
         select.addEventListener("click", async () => {
             currentWallId = wall.id;
+            activeSharedWall = null;
             localStorage.setItem("memoryWallCurrentWall", currentWallId);
             closeSheets();
             applyWallSettings();
@@ -2883,6 +2933,7 @@ function renderWallList(){
     });
     newWallButton.disabled = wallDefinitions.length >= 3;
     newWallButton.textContent = wallDefinitions.length >= 3 ? "3 / 3 walls" : "+ New wall";
+    if (window.renderSharedWallsIntoList) window.renderSharedWallsIntoList();
 }
 
 function escapeHtml(value){
@@ -3447,3 +3498,43 @@ applyWallSettings();
     });
 })();
 </script>
+
+<script>
+/* Shared wall list */
+window.renderSharedWallsIntoList=async function(){
+    const list=document.getElementById("wallList"); if(!list||typeof supabaseClient==="undefined") return;
+    try{
+        const {data:sessionData}=await supabaseClient.auth.getSession(); const user=sessionData?.session?.user; if(!user) return;
+        const {data:members,error}=await supabaseClient.from("shared_wall_members").select("wall_id,role").eq("user_id",user.id).neq("role","owner"); if(error) return;
+        const ids=(members||[]).map(m=>m.wall_id); if(!ids.length) return;
+        const {data:walls}=await supabaseClient.from("shared_walls").select("id,name,owner_id").in("id",ids); if(!walls?.length) return;
+        const heading=document.createElement("div");heading.className="customLabel";heading.style.marginTop="18px";heading.textContent="Shared with you";list.appendChild(heading);
+        for(const wall of walls){
+            const row=document.createElement("div");row.className="wallRow";const btn=document.createElement("button");btn.type="button";btn.className="wallSelect";btn.innerHTML=`<strong>${escapeHtml(wall.name||"Shared wall")}<span class="sharedWallBadge">Shared</span></strong><small>Tap to open</small>`;
+            btn.addEventListener("click",async()=>{activeSharedWall=wall.id;closeSheets();await renderGallery();showToast("Opened shared wall");});row.appendChild(btn);list.appendChild(row);
+        }
+    }catch(e){console.warn("Shared wall list unavailable",e);}
+};
+</script>
+
+<script>
+/* Shared wall actions and cloud photo sync */
+(function(){
+const shareWallButton=document.getElementById("shareWallButton"),sharePanel=document.getElementById("sharePanel"),shareWallName=document.getElementById("shareWallName"),searchInput=document.getElementById("shareFriendSearchInput"),searchButton=document.getElementById("shareFriendSearchButton"),friendList=document.getElementById("shareFriendList"),status=document.getElementById("shareStatus"),syncButton=document.getElementById("syncWallPhotosButton");
+let cloudWallId=null,currentUser=null;
+function setStatus(m,t=""){status.textContent=m||"";status.className="shareStatus"+(t?" "+t:"");}
+function initials(n){return String(n||"?").slice(0,2).toUpperCase();}
+async function getUser(){const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;currentUser=data.session?.user||null;return currentUser;}
+async function ensureCloudWall(){const u=await getUser();if(!u)throw new Error("Sign in to share walls.");const wall=currentWall();if(wall.cloudShareId){cloudWallId=wall.cloudShareId;return cloudWallId;}const {data,error}=await supabaseClient.from("shared_walls").insert({owner_id:u.id,name:wall.name}).select("id").single();if(error)throw error;cloudWallId=data.id;wall.cloudShareId=data.id;localStorage.setItem("memoryWallWalls",JSON.stringify(wallDefinitions));const {error:e}=await supabaseClient.from("shared_wall_members").insert({wall_id:data.id,user_id:u.id,role:"owner"});if(e)throw e;return cloudWallId;}
+async function friends(){const u=await getUser();if(!u)return[];const {data,error}=await supabaseClient.from("friendships").select("requester_id,receiver_id").eq("status","accepted").or(`requester_id.eq.${u.id},receiver_id.eq.${u.id}`);if(error)throw error;const ids=[...new Set((data||[]).map(f=>f.requester_id===u.id?f.receiver_id:f.requester_id))];if(!ids.length)return[];const r=await supabaseClient.from("profiles").select("id,username").in("id",ids).order("username");if(r.error)throw r.error;return r.data||[];}
+async function members(){const {data,error}=await supabaseClient.from("shared_wall_members").select("user_id,role").eq("wall_id",cloudWallId);if(error)throw error;return data||[];}
+async function refresh(){shareWallName.textContent=currentWall().name;friendList.innerHTML="";setStatus("");try{await ensureCloudWall();const [fs,ms]=await Promise.all([friends(),members()]);const ids=new Set(ms.map(m=>m.user_id));if(!fs.length){friendList.innerHTML='<div class="friendEmptySmall">Add friends first, then they will appear here.</div>';return;}for(const f of fs){const row=document.createElement("div");row.className="shareFriendRow";const av=document.createElement("div");av.className="shareFriendAvatar";av.textContent=initials(f.username);const main=document.createElement("div");main.className="shareFriendMain";const strong=document.createElement("strong");strong.textContent="@"+(f.username||"unknown");const small=document.createElement("small");small.textContent=ids.has(f.id)?"Has access":"Friend";main.append(strong,small);const b=document.createElement("button");b.type="button";b.className="shareFriendAction";b.textContent=ids.has(f.id)?"Remove":"Share";if(ids.has(f.id))b.classList.add("remove");b.addEventListener("click",()=>ids.has(f.id)?remove(f.id):add(f.id,f.username));row.append(av,main,b);friendList.appendChild(row);}}catch(e){console.error(e);setStatus(e.message||"Could not load sharing.","error");}}
+async function add(id,name){try{await ensureCloudWall();const {error}=await supabaseClient.from("shared_wall_members").upsert({wall_id:cloudWallId,user_id:id,role:"editor"},{onConflict:"wall_id,user_id"});if(error)throw error;setStatus("Shared with @"+name+".","success");await refresh();}catch(e){console.error(e);setStatus(e.message||"Could not share this wall.","error");}}
+async function remove(id){try{const {error}=await supabaseClient.from("shared_wall_members").delete().eq("wall_id",cloudWallId).eq("user_id",id);if(error)throw error;setStatus("Access removed.","success");await refresh();}catch(e){console.error(e);setStatus(e.message||"Could not remove access.","error");}}
+async function search(){const q=searchInput.value.trim().toLowerCase();if(!q){await refresh();return;}try{await ensureCloudWall();const fs=await friends();const ms=await members();const ids=new Set(ms.map(m=>m.user_id));const matches=fs.filter(f=>(f.username||"").toLowerCase().includes(q));friendList.innerHTML="";if(!matches.length){friendList.innerHTML='<div class="friendEmptySmall">No accepted friend matched.</div>';return;}for(const f of matches){const row=document.createElement("div");row.className="shareFriendRow";const av=document.createElement("div");av.className="shareFriendAvatar";av.textContent=initials(f.username);const main=document.createElement("div");main.className="shareFriendMain";main.innerHTML=`<strong>@${escapeHtml(f.username)}</strong><small>${ids.has(f.id)?"Has access":"Friend"}</small>`;const b=document.createElement("button");b.type="button";b.className="shareFriendAction";b.textContent=ids.has(f.id)?"Remove":"Share";if(ids.has(f.id))b.classList.add("remove");b.addEventListener("click",()=>ids.has(f.id)?remove(f.id):add(f.id,f.username));row.append(av,main,b);friendList.appendChild(row);}}catch(e){console.error(e);setStatus(e.message||"Search failed.","error");}}
+window.syncPhotoToCloud=async function(photo){const u=await getUser();if(!u)return;const wall=currentWall();if(!wall.cloudShareId)return;const ext=(photo.type?.split("/")[1]||"jpg").replace(/[^a-z0-9]/gi,"").slice(0,8)||"jpg";const path=`${wall.cloudShareId}/${photo.cloudId||Date.now()}.${ext}`;const up=await supabaseClient.storage.from("wall-photos").upload(path,photo.blob,{contentType:photo.type||"image/jpeg",upsert:true});if(up.error)throw up.error;const row=await supabaseClient.from("shared_wall_photos").upsert({wall_id:wall.cloudShareId,storage_path:path,name:photo.name,mime_type:photo.type||"image/jpeg",taken:photo.taken,date_source:photo.dateSource||"Shared photo"},{onConflict:"wall_id,storage_path"});if(row.error)throw row.error;};
+window.syncWallPhotosToCloud=async function(){await ensureCloudWall();const photos=await getAllPhotos();let count=0;for(const p of photos){await window.syncPhotoToCloud(p);count++;}return count;};
+shareWallButton.addEventListener("click",async()=>{sharePanel.classList.toggle("open");if(sharePanel.classList.contains("open"))await refresh();});searchButton.addEventListener("click",search);searchInput.addEventListener("keydown",e=>{if(e.key==="Enter")search();});syncButton.addEventListener("click",async()=>{syncButton.disabled=true;setStatus("Uploading this wall’s photos…");try{const n=await window.syncWallPhotosToCloud();setStatus(`${n} photo${n===1?"":"s"} uploaded.`,"success");}catch(e){console.error(e);setStatus(e.message||"Could not upload photos.","error");}finally{syncButton.disabled=false;}});
+})();
+</script>
+

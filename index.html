@@ -834,13 +834,18 @@ button {
 
 /* =========================
    BOTTOM NAVIGATION
+   iOS MOBILE STABILITY
 ========================= */
 
+/*
+ * Keep the navigation independent of document height.
+ * The old version could visibly jump while iOS Safari was
+ * settling its dynamic browser viewport on first load.
+ */
 .bottomNav {
     position: fixed;
     left: 50%;
     bottom: 14px;
-    transform: translateX(-50%);
     z-index: 900;
 
     display: flex;
@@ -855,8 +860,18 @@ button {
 
     box-shadow: 0 10px 35px rgba(0,0,0,.12);
 
+    /* Don't animate its initial position. */
+    transition: none;
+
+    /* A separate compositor layer helps iOS keep the bar stable. */
+    transform: translate3d(-50%, 0, 0);
+    -webkit-transform: translate3d(-50%, 0, 0);
+
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+
+    /* Don't let the safe-area change its actual box height. */
+    padding-bottom: 7px;
 }
 
 .bottomNav button {
@@ -906,13 +921,24 @@ button {
 
 @media(max-width: 700px) {
     .bottomNav {
+        /*
+         * Do not use 100vh/100dvh or JS viewport calculations here.
+         * iOS can change those values during the first paint, which
+         * makes a fixed element appear to twitch.
+         */
         left: 12px;
         right: 12px;
-        bottom: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
         width: auto;
-        transform: none;
+
+        transform: translate3d(0, 0, 0);
+        -webkit-transform: translate3d(0, 0, 0);
+
         justify-content: space-around;
         border-radius: 17px;
+
+        /* Keep the home-indicator area inside the nav without moving it. */
+        padding-bottom: calc(7px + env(safe-area-inset-bottom));
     }
 
     .bottomNav button {
@@ -924,6 +950,14 @@ button {
 
     .bottomNav .navIcon {
         font-size: 15px;
+    }
+}
+
+/* Standalone/PWA mode: use a fixed, safe bottom inset without
+   reacting to Safari's browser-toolbar viewport changes. */
+@media (display-mode: standalone) {
+    .bottomNav {
+        bottom: max(10px, env(safe-area-inset-bottom));
     }
 }
 
